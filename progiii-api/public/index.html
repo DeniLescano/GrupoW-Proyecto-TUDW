@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Salones</title>
+    <link rel="stylesheet" href="styless/main.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Gestión de Salones de Eventos</h1>
+        
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input" 
+                placeholder="Buscar por título o dirección..." 
+                onkeyup="filterSalones()"
+            >
+            
+            <button id="open-add-modal-btn" class="add-btn">Crear Nuevo Salón</button>
+        </div>
+    </header>
+
+    <div id="salones-cards-container" class="cards-grid">
+        </div>
+    
+    <p id="no-results" style="display: none; text-align: center; color: gray;">
+        No se encontraron salones que coincidan con la búsqueda.
+    </p>
+
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-add-modal">&times;</span>
+            <h2>Crear Nuevo Salón</h2>
+            
+            <form id="add-salon-form">
+                <input type="text" id="add-titulo" placeholder="Título" required>
+                <input type="text" id="add-direccion" placeholder="Dirección" required>
+                <input type="number" id="add-capacidad" placeholder="Capacidad" required>
+                <input type="number" id="add-importe" placeholder="Importe ($)" required>
+                <button type="submit" class="add-btn">Guardar Salón</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-details-modal">&times;</span>
+            <h2>Detalles del Salón</h2>
+            
+            <div id="salon-details-view">
+                <p><strong>Título:</strong> <span id="view-titulo"></span></p>
+                <p><strong>Dirección:</strong> <span id="view-direccion"></span></p>
+                <p><strong>Capacidad:</strong> <span id="view-capacidad"></span></p>
+                <p><strong>Importe:</strong> <span id="view-importe"></span></p>
+                
+                <div class="action-buttons-view">
+                    <button id="open-edit-form-btn" class="edit-btn">Editar</button>
+                    <button id="delete-salon-btn" class="delete-btn">Eliminar</button>
+                </div>
+            </div>
+
+            <form id="edit-salon-form" style="display: none;">
+                <h3>Editar Datos</h3>
+                <input type="hidden" id="edit-id"> 
+                
+                <input type="text" id="edit-titulo" placeholder="Título" required>
+                <input type="text" id="edit-direccion" placeholder="Dirección" required>
+                <input type="number" id="edit-capacidad" placeholder="Capacidad" required>
+                <input type="number" id="edit-importe" placeholder="Importe ($)" required>
+                
+                <div class="action-buttons-edit">
+                    <button type="submit" class="edit-btn">Guardar Cambios</button>
+                    <button type="button" id="cancel-edit-btn" class="cancel-btn">Cancelar</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+
+    <script src="scripts/salones.js" defer></script>
+</body>
+</html>
