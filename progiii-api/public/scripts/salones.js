@@ -20,49 +20,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let allSalones = []; 
     const API_URL = '/api/salones';
 
-    openAddModalBtn.addEventListener('click', () => {
-        addModal.style.display = 'flex';
-        addSalonForm.reset(); 
-    });
-
-    closeAddModalBtn.addEventListener('click', () => {
-        addModal.style.display = 'none';
-    });
-
-    closeDetailsModalBtn.addEventListener('click', () => {
-        detailsModal.style.display = 'none';
-
-        showViewMode(); 
-    });
-
-    window.addEventListener('click', (event) => {
-        if (event.target === addModal) {
-            addModal.style.display = 'none';
-        }
-        if (event.target === detailsModal) {
-            detailsModal.style.display = 'none';
-            showViewMode(); 
-        }
-    });
-
-    async function fetchSalones() {
-        try {
-            const response = await fetch(API_URL);
-            if (!response.ok) {
-                throw new Error('Error al cargar los salones');
-            }
-            // Guarda los datos originales para el filtrado
-            allSalones = await response.json(); 
-            
-            // Llama a la función de renderizado con todos los salones
-            renderSalones(allSalones);
-
-        } catch (error) {
-            console.error('Fetch error:', error);
-            cardsContainer.innerHTML = `<p style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</p>`;
-        }
+  
+    
+    function showViewMode() {
+        salonDetailsView.style.display = 'block';
+        editSalonForm.style.display = 'none';
     }
--
+
+    function openDetailsModal(salon) {
+        document.getElementById('view-titulo').textContent = salon.titulo;
+        document.getElementById('view-direccion').textContent = salon.direccion;
+        document.getElementById('view-capacidad').textContent = salon.capacidad;
+        document.getElementById('view-importe').textContent = `$${parseFloat(salon.importe).toFixed(2)}`;
+        
+        document.getElementById('edit-id').value = salon.salon_id;
+        document.getElementById('edit-titulo').value = salon.titulo;
+        document.getElementById('edit-direccion').value = salon.direccion;
+        document.getElementById('edit-capacidad').value = salon.capacidad;
+        document.getElementById('edit-importe').value = salon.importe;
+        
+        deleteSalonBtn.dataset.id = salon.salon_id;
+
+        showViewMode();
+        detailsModal.style.display = 'flex';
+    }
+
     function renderSalones(salonesToRender) {
         cardsContainer.innerHTML = ''; 
 
@@ -92,10 +74,59 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Peticiones a la API (CRUD) ---
+
+    async function fetchSalones() {
+        try {
+            const response = await fetch(API_URL);
+            if (!response.ok) {
+                throw new Error('Error al cargar los salones');
+            }
+            allSalones = await response.json(); 
+            renderSalones(allSalones);
+
+        } catch (error) {
+            console.error('Fetch error:', error);
+            cardsContainer.innerHTML = `<p style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</p>`;
+        }
+    }
+
+   
+    
+    openAddModalBtn.addEventListener('click', () => {
+        addModal.style.display = 'flex';
+        addSalonForm.reset(); 
+    });
+
+    closeAddModalBtn.addEventListener('click', () => {
+        addModal.style.display = 'none';
+    });
+
+    closeDetailsModalBtn.addEventListener('click', () => {
+        detailsModal.style.display = 'none';
+        showViewMode(); 
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target === addModal) {
+            addModal.style.display = 'none';
+        }
+        if (event.target === detailsModal) {
+            detailsModal.style.display = 'none';
+            showViewMode(); 
+        }
+    });
+    
+    openEditFormBtn.addEventListener('click', () => {
+        salonDetailsView.style.display = 'none';
+        editSalonForm.style.display = 'block';
+    });
+
+    cancelEditBtn.addEventListener('click', showViewMode);
+    
     window.filterSalones = function() {
         const filterText = filterInput.value.toLowerCase();
         
-        // Filtra el array de salones guardado
         const filteredSalones = allSalones.filter(salon => {
             return salon.titulo.toLowerCase().includes(filterText) || 
                    salon.direccion.toLowerCase().includes(filterText);
@@ -136,36 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function openDetailsModal(salon) {
-        document.getElementById('view-titulo').textContent = salon.titulo;
-        document.getElementById('view-direccion').textContent = salon.direccion;
-        document.getElementById('view-capacidad').textContent = salon.capacidad;
-        document.getElementById('view-importe').textContent = `$${parseFloat(salon.importe).toFixed(2)}`;
-        
-        document.getElementById('edit-id').value = salon.salon_id;
-        document.getElementById('edit-titulo').value = salon.titulo;
-        document.getElementById('edit-direccion').value = salon.direccion;
-        document.getElementById('edit-capacidad').value = salon.capacidad;
-        document.getElementById('edit-importe').value = salon.importe;
-        
-        deleteSalonBtn.dataset.id = salon.salon_id;
-
-        showViewMode();
-        detailsModal.style.display = 'flex';
-    }
-
-    openEditFormBtn.addEventListener('click', () => {
-        salonDetailsView.style.display = 'none';
-        editSalonForm.style.display = 'block';
-    });
-
-    cancelEditBtn.addEventListener('click', showViewMode);
-    function showViewMode() {
-        salonDetailsView.style.display = 'block';
-        editSalonForm.style.display = 'none';
-    }
-
-
     editSalonForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -191,8 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             alert('Salón actualizado correctamente!');
             detailsModal.style.display = 'none'; 
-            showViewMode(); // Restablece la vista
-            fetchSalones(); // Recarga la lista
+            showViewMode(); 
+            fetchSalones(); 
 
         } catch (error) {
             alert(`Error al actualizar: ${error.message}`);
@@ -220,14 +221,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             alert('Salón eliminado correctamente (Soft Delete)!');
             detailsModal.style.display = 'none'; 
-            fetchSalones(); // Recarga la lista
+            fetchSalones(); 
 
         } catch (error) {
             alert(`Error al eliminar: ${error.message}`);
             console.error('Error al eliminar salón:', error);
         }
     });
-
 
 
     fetchSalones();
