@@ -27,6 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const date = new Date(dateString);
         return date.toLocaleDateString('es-AR') + ' ' + date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
     }
+    
+    function getLocalUserById(id) {
+        return allUsuarios.find(u => u.usuario_id == id);
+    }
 
     function showViewMode() {
         userDetailsView.style.display = 'block';
@@ -127,7 +131,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Fetch error:', error);
-            activosBody.innerHTML = `<tr><td colspan="8" style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</td></tr>`;
+            const errorMessageRow = `<tr><td colspan="8" style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</td></tr>`;
+            activosBody.innerHTML = errorMessageRow;
+            inactivosBody.innerHTML = errorMessageRow;
         }
     }
 
@@ -139,11 +145,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        const user = getLocalUserById(id);
+        if (!user) {
+            alert(`Error: Usuario con ID ${id} no encontrado.`);
+            return;
+        }
+
+        const dataToSend = {
+            nombre: user.nombre,
+            apellido: user.apellido,
+            nombre_usuario: user.nombre_usuario,
+            tipo_usuario: user.tipo_usuario,
+            celular: user.celular || '',
+            foto: user.foto || '',
+            activo: newStatus
+        };
+        
         try {
             const response = await fetch(`${API_URL}/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ activo: newStatus })
+                body: JSON.stringify(dataToSend)
             });
 
             if (!response.ok) {
@@ -250,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tipo_usuario: parseInt(document.getElementById('edit-tipo-usuario').value),
             celular: document.getElementById('edit-celular').value,
             foto: document.getElementById('edit-foto').value,
-            activo: 1 
+            activo: 1
         };
 
         try {

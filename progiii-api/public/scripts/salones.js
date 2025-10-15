@@ -74,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Peticiones a la API (CRUD) ---
 
     async function fetchSalones() {
         try {
