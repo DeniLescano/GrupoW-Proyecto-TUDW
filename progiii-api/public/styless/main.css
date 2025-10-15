@@ -219,6 +219,46 @@ button:active {
     flex: 1;
 }
 
+.main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; 
+    margin-bottom: 30px;
+    padding: 10px 20px;
+    background-color: #ffffff; 
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.main-nav h1 {
+    margin: 0; 
+    font-size: 2rem; 
+    border-bottom: none; 
+}
+
+.nav-admin-btn {
+    color: white;
+    padding: 8px 15px; 
+    border-radius: var(--border-radius);
+}
+
+@media (max-width: 768px) {
+    .main-nav {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .main-nav h1 {
+        font-size: 1.5rem;
+    }
+    
+    .nav-admin-btn {
+        width: 100%; 
+        text-align: center;
+    }
+}
+
 
 @media (max-width: 768px) {
     body {
@@ -248,4 +288,74 @@ button:active {
         width: 100%;
         margin-bottom: 10px;
     }
+}
+
+/* Contenedor para la tabla */
+.table-container {
+    overflow-x: auto; /* Permite scroll horizontal en pantallas pequeñas */
+    margin: 20px auto;
+    max-width: 1200px;
+}
+
+/* Estilo general de la tabla */
+#usuarios-table {
+    width: 100%;
+    border-collapse: collapse; /* Elimina el espacio entre bordes */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+}
+
+/* Encabezados de la tabla */
+#usuarios-table th {
+    background-color: #3f51b5; /* Color primario */
+    color: white;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+}
+
+/* Filas y celdas del cuerpo */
+#usuarios-table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #ddd;
+    vertical-align: middle;
+}
+
+/* Estilo alterno para filas */
+#usuarios-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Efecto hover */
+#usuarios-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Botones dentro de la tabla */
+#usuarios-table .table-actions button {
+    margin-right: 5px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+/* Estilo para la fila de usuarios desactivados */
+.user-inactive-row {
+    background-color: #fcebeb !important; /* Fondo rojo muy suave */
+    color: #999;
+}
+
+.user-inactive-row td {
+    text-decoration: line-through; /* Tachamos el texto para mayor claridad */
+}
+
+/* Estilo para el botón de activación (cuando el usuario está inactivo) */
+.activate-btn {
+    background-color: #17a2b8; /* Un color distinto, como azul claro */
+    color: white;
+}
+
+.activate-btn:hover {
+    background-color: #138496;
 }

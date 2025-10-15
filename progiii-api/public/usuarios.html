@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración de Usuarios</title>
+    <link rel="stylesheet" href="styless/main.css">
+</head>
+<body>
+    <a href="index.html" class="nav-admin-btn view-btn">Gestión de Salones</a>
+    <nav class="main-nav">
+        <h1>Administración de Usuarios</h1>
+        
+    </nav>
+    
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input-user" 
+                placeholder="Buscar por nombre o usuario..." 
+                onkeyup="filterUsuarios()"
+            >
+            <button id="open-add-user-modal-btn" class="add-btn">Crear Nuevo Usuario</button>
+        </div>
+    </header>
+
+    <div class="table-container">
+        <h2>Usuarios Activos</h2>
+        <table id="usuarios-table-activos">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre y Apellido</th>
+                    <th>Usuario</th>
+                    <th>Tipo</th>
+                    <th>Celular</th>
+                    <th>Activo</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="usuarios-activos-body">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-container" style="margin-top: 40px;">
+        <h2 style="color: var(--danger-color, #dc3545);">Usuarios Desactivados</h2>
+        <table id="usuarios-table-inactivos">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre y Apellido</th>
+                    <th>Usuario</th>
+                    <th>Tipo</th>
+                    <th>Celular</th>
+                    <th>Activo</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="usuarios-inactivos-body">
+            </tbody>
+        </table>
+    </div>
+
+    
+    <p id="no-results-user" style="display: none; text-align: center; color: gray;">
+        No se encontraron usuarios que coincidan con la búsqueda.
+    </p>
+
+
+    <div id="add-user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-add-user-modal">&times;</span>
+            <h2>Crear Nuevo Usuario</h2>
+            <form id="add-user-form">
+                <input type="text" id="add-nombre" placeholder="Nombre" required>
+                <input type="text" id="add-apellido" placeholder="Apellido" required>
+                <input type="text" id="add-nombre-usuario" placeholder="Nombre de Usuario" required>
+                <input type="password" id="add-contrasenia" placeholder="Contraseña" required>
+                <input type="number" id="add-tipo-usuario" placeholder="Tipo de Usuario (ej: 1 o 2)" required>
+                <input type="text" id="add-celular" placeholder="Celular (opcional)">
+                <input type="text" id="add-foto" placeholder="URL de Foto (opcional)">
+                
+                <button type="submit" class="add-btn">Guardar Usuario</button>
+            </form>
+        </div>
+    </div>
+
+
+    <div id="details-user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-details-user-modal">&times;</span>
+            <h2>Detalles del Usuario</h2>
+            
+            <div id="user-details-view">
+                <p><strong>ID:</strong> <span id="view-id"></span></p>
+                <p><strong>Nombre:</strong> <span id="view-nombre"></span></p>
+                <p><strong>Apellido:</strong> <span id="view-apellido"></span></p>
+                <p><strong>Usuario:</strong> <span id="view-nombre-usuario"></span></p>
+                <p><strong>Tipo:</strong> <span id="view-tipo-usuario"></span></p>
+                <p><strong>Celular:</strong> <span id="view-celular"></span></p>
+                <p><strong>Estado:</strong> <span id="view-activo"></span></p>
+                <p><strong>Creado:</strong> <span id="view-creado"></span></p>
+                
+                <div class="action-buttons-view">
+                    <button id="open-edit-user-form-btn" class="edit-btn">Modificar Usuario</button>
+                    <button id="delete-user-btn" class="delete-btn">Desactivar Usuario</button>
+                </div>
+            </div>
+
+            <form id="edit-user-form" style="display: none;">
+                <h3>Editar Datos</h3>
+                <input type="hidden" id="edit-user-id"> 
+                <input type="text" id="edit-nombre" placeholder="Nombre" required>
+                <input type="text" id="edit-apellido" placeholder="Apellido" required>
+                <input type="text" id="edit-nombre-usuario" placeholder="Nombre de Usuario" required>
+                <input type="number" id="edit-tipo-usuario" placeholder="Tipo de Usuario" required>
+                <input type="text" id="edit-celular" placeholder="Celular">
+                <input type="text" id="edit-foto" placeholder="URL de Foto">
+                
+                <div class="action-buttons-edit">
+                    <button type="submit" class="edit-btn">Guardar Cambios</button>
+                    <button type="button" id="cancel-edit-user-btn" class="cancel-btn">Cancelar</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <script src="scripts/usuarios.js" defer></script>
+</body>
+</html>

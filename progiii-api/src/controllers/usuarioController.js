@@ -1,10 +1,9 @@
 const db = require('../config/database');
 
-// BROWSE - Obtener todos los usuarios activos
 exports.browse = async (req, res) => {
   try {
     const [usuarios] = await db.query(
-      'SELECT usuario_id, nombre, apellido, email, rol, activo, created_at FROM usuarios WHERE activo = 1'
+      'SELECT usuario_id, nombre, apellido, nombre_usuario, tipo_usuario, celular, activo, creado, modificado FROM usuarios WHERE activo = 1'
     );
     res.json(usuarios);
   } catch (error) {
@@ -12,12 +11,11 @@ exports.browse = async (req, res) => {
   }
 };
 
-// READ - Obtener un usuario por ID
 exports.read = async (req, res) => {
   const { id } = req.params;
   try {
     const [usuario] = await db.query(
-      'SELECT usuario_id, nombre, apellido, email, rol, activo, created_at FROM usuarios WHERE usuario_id = ? AND activo = 1',
+      'SELECT usuario_id, nombre, apellido, nombre_usuario, tipo_usuario, celular, activo, foto, creado, modificado FROM usuarios WHERE usuario_id = ? AND activo = 1',
       [id]
     );
     if (usuario.length === 0) {
@@ -29,13 +27,12 @@ exports.read = async (req, res) => {
   }
 };
 
-// ADD - Crear un nuevo usuario
 exports.add = async (req, res) => {
-  const { nombre, apellido, email, password, rol } = req.body;
+  const { nombre, apellido, nombre_usuario, contrasenia, tipo_usuario, celular, foto } = req.body;
   try {
     const [result] = await db.query(
-      'INSERT INTO usuarios (nombre, apellido, email, password, rol) VALUES (?, ?, ?, ?, ?)',
-      [nombre, apellido, email, password, rol || 'cliente']
+      'INSERT INTO usuarios (nombre, apellido, nombre_usuario, contrasenia, tipo_usuario, celular, foto) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [nombre, apellido, nombre_usuario, contrasenia, tipo_usuario || 1, celular || null, foto || null]
     );
     res.status(201).json({ message: 'Usuario creado correctamente', id: result.insertId });
   } catch (error) {
@@ -43,14 +40,13 @@ exports.add = async (req, res) => {
   }
 };
 
-// EDIT - Actualizar un usuario
 exports.edit = async (req, res) => {
   const { id } = req.params;
-  const { nombre, apellido, email, rol, activo } = req.body;
+  const { nombre, apellido, nombre_usuario, tipo_usuario, celular, activo, foto } = req.body;
   try {
     const [result] = await db.query(
-      'UPDATE usuarios SET nombre = ?, apellido = ?, email = ?, rol = ?, activo = ? WHERE usuario_id = ?',
-      [nombre, apellido, email, rol, activo, id]
+      'UPDATE usuarios SET nombre = ?, apellido = ?, nombre_usuario = ?, tipo_usuario = ?, celular = ?, activo = ?, foto = ? WHERE usuario_id = ?',
+      [nombre, apellido, nombre_usuario, tipo_usuario, celular, activo, foto, id]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Usuario no encontrado para actualizar' });
@@ -61,7 +57,6 @@ exports.edit = async (req, res) => {
   }
 };
 
-// DELETE - Baja lógica (soft delete)
 exports.delete = async (req, res) => {
   const { id } = req.params;
   try {
