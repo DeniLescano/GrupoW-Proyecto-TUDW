@@ -1,76 +1,55 @@
 const db = require('../config/database');
+const catchAsync = require('../utils/catchAsync');
 
-// BROWSE - Obtener todos los usuarios activos
-exports.browse = async (req, res) => {
-  try {
-    const [usuarios] = await db.query(
-      'SELECT usuario_id, nombre, apellido, email, rol, activo, created_at FROM usuarios WHERE activo = 1'
-    );
-    res.json(usuarios);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los usuarios', error: error.message });
+// Listar usuarios activos
+exports.browse = catchAsync(async (req, res, next) => {
+  const userRole = req.user.tipo_usuario;
+  let query = 'SELECT usuario_id, nombre, apellido, nombre_usuario, tipo_usuario, activo, creado FROM usuarios WHERE activo = 1';
+  const params = [];
+
+  // Si el usuario es un Empleado, mostrar solo los Clientes
+  if (userRole === 2) {
+    query += ' AND tipo_usuario = ?';
+    params.push(3);
   }
-};
 
-// READ - Obtener un usuario por ID
-exports.read = async (req, res) => {
+  const [usuarios] = await db.query(query, params);
+  res.json(usuarios);
+});
+
+// Obtener un usuario por ID
+exports.read = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  try {
-    const [usuario] = await db.query(
-      'SELECT usuario_id, nombre, apellido, email, rol, activo, created_at FROM usuarios WHERE usuario_id = ? AND activo = 1',
-      [id]
-    );
-    if (usuario.length === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-    res.json(usuario[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener el usuario', error: error.message });
+  const [usuario] = await db.query(
+    'SELECT usuario_id, nombre, apellido, nombre_usuario, tipo_usuario, activo, creado FROM usuarios WHERE usuario_id = ? AND activo = 1',
+    [id]
+  );
+  if (usuario.length === 0) {
+    return res.status(404).json({ message: 'Usuario no encontrado' });
   }
-};
+  res.json(usuario[0]);
+});
 
-// ADD - Crear un nuevo usuario
-exports.add = async (req, res) => {
-  const { nombre, apellido, email, password, rol } = req.body;
-  try {
-    const [result] = await db.query(
-      'INSERT INTO usuarios (nombre, apellido, email, password, rol) VALUES (?, ?, ?, ?, ?)',
-      [nombre, apellido, email, password, rol || 'cliente']
-    );
-    res.status(201).json({ message: 'Usuario creado correctamente', id: result.insertId });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear el usuario', error: error.message });
-  }
-};
-
-// EDIT - Actualizar un usuario
-exports.edit = async (req, res) => {
+// Actualizar un usuario
+exports.edit = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const { nombre, apellido, email, rol, activo } = req.body;
-  try {
-    const [result] = await db.query(
-      'UPDATE usuarios SET nombre = ?, apellido = ?, email = ?, rol = ?, activo = ? WHERE usuario_id = ?',
-      [nombre, apellido, email, rol, activo, id]
-    );
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado para actualizar' });
-    }
-    res.json({ message: 'Usuario actualizado correctamente' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el usuario', error: error.message });
+  const { nombre, apellido, nombre_usuario, tipo_usuario, activo } = req.body;
+  const [result] = await db.query(
+    'UPDATE usuarios SET nombre = ?, apellido = ?, nombre_usuario = ?, tipo_usuario = ?, activo = ? WHERE usuario_id = ?',
+    [nombre, apellido, nombre_usuario, tipo_usuario, activo, id]
+  );
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ message: 'Usuario no encontrado para actualizar' });
   }
-};
+  res.json({ message: 'Usuario actualizado correctamente' });
+});
 
-// DELETE - Baja lógica (soft delete)
-exports.delete = async (req, res) => {
+// Borrado lógico de un usuario
+exports.delete = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  try {
-    const [result] = await db.query('UPDATE usuarios SET activo = 0 WHERE usuario_id = ?', [id]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado para eliminar' });
-    }
-    res.json({ message: 'Usuario eliminado correctamente (soft delete)' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar el usuario', error: error.message });
+  const [result] = await db.query('UPDATE usuarios SET activo = 0 WHERE usuario_id = ?', [id]);
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ message: 'Usuario no encontrado para eliminar' });
   }
-};
+  res.json({ message: 'Usuario eliminado correctamente (soft delete)' });
+});

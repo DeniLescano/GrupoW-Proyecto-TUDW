@@ -1,149 +1,198 @@
-# Guía del Proyecto: API de Reservas PROGIII
+# API de Reservas de Salones - PROGIII
 
-Este documento sirve como una guía central para la instalación, configuración, y desarrollo continuo de la API para el sistema de reservas de salones de cumpleaños.
+## 1. Introducción
 
-## 1. Descripción General del Proyecto
+Bienvenido a la API de Reservas de Salones, el backend para el sistema de gestión de cumpleaños "PROGIII". Esta API REST ha sido desarrollada en **Node.js** utilizando el framework **Express.js** y se conecta a una base de datos **MySQL** para la persistencia de datos. 
 
-Esta API REST, desarrollada en Node.js con el framework Express, gestiona las operaciones de un sistema de reservas de salones. Se conecta a una base de datos MySQL para persistir la información y expone una serie de endpoints para interactuar con los recursos de la aplicación.
+El sistema está diseñado con una arquitectura robusta que incluye autenticación por tokens **JWT**, un sistema de autorización basado en roles, validación de datos de entrada y un manejo de errores centralizado, siguiendo las mejores prácticas de desarrollo de software.
 
-## 2. Estructura del Proyecto
+## 2. Arquitectura y Tecnologías
 
-La estructura de la API (`progiii-api`) es la siguiente:
+- **Framework:** Express.js
+- **Base de Datos:** MySQL
+- **Autenticación:** JSON Web Tokens (JWT)
+- **Validación:** `express-validator`
+- **Documentación:** `swagger-jsdoc` y `swagger-ui-express`
+- **Entorno de Desarrollo:** `nodemon` para recarga automática y `.env` para variables de entorno.
 
-```
-progiii-api/
-├── 📁 database/
-│   ├── 📁 migrations/
-│   │   └── 001_initial_schema.sql   # Script SQL para crear todas las tablas
-│   └── 📁 seeds/
-│       └── initial_data.sql         # Script SQL para poblar la BD con datos de prueba
-│
-├── 📁 src/
-│   ├── 📁 config/
-│   │   └── database.js              # Configuración de la conexión a MySQL
-│   │
-│   ├── 📁 controllers/
-│   │   └── salonController.js       # Lógica de negocio para la entidad 'salones'
-│   │
-│   ├── 📁 middlewares/              # (Vacío) Para futuros middlewares
-│   │
-│   ├── 📁 routes/
-│   │   └── salones.js               # Define los endpoints para /api/salones
-│   │
-│   ├── 📁 utils/                    # (Vacío) Para futuras funciones auxiliares
-│   │
-│   └── app.js                       # Archivo principal de Express (configura middlewares y rutas)
-│
-├── .env                             # Variables de entorno (versionado para el equipo)
-├── .gitignore                       # Archivo para ignorar dependencias (node_modules)
-├── package.json                     # Dependencias y scripts del proyecto
-└── server.js                        # Punto de entrada (inicia el servidor)
-```
+La lógica de la aplicación está organizada de la siguiente manera:
 
-## 3. Cómo Instalar y Configurar el Entorno
+- **`src/config`**: Contiene la configuración de la base de datos y Swagger.
+- **`src/controllers`**: Separa la lógica de negocio para cada entidad (Usuarios, Salones, Reservas, etc.).
+- **`src/middlewares`**: Contiene los middlewares para autenticación, autorización por roles, validación y manejo de errores.
+- **`src/routes`**: Define los endpoints de la API para cada recurso.
+- **`src/utils`**: Utilidades para simplificar el código, como el manejador de funciones asíncronas.
 
-Sigue estas instrucciones para tener un entorno de desarrollo funcional en tu máquina.
+## 3. Guía de Pruebas
 
-### 3.1. Prerrequisitos
+### 3.1. Probar con Swagger (Recomendado)
 
-Asegúrate de tener instalado el siguiente software:
-- **Node.js**: (Versión 18 o superior)
-- **npm**: (Generalmente se instala con Node.js)
-- **Git**: Para clonar el repositorio.
-- **Servidor de MySQL**: La base de datos del proyecto.
-- **Cliente de API REST**: Se recomienda [Bruno](https://www.usebruno.com/) o Postman para probar los endpoints.
+La forma más sencilla de explorar y probar la API es a través de su documentación interactiva generada con Swagger.
 
-### 3.2. Pasos de Instalación
+1.  **Inicia el servidor:** `npm run dev`
+2.  **Abre el navegador:** Ve a [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
 
-1.  **Clonar el Repositorio:**
-    ```bash
-    git clone https://github.com/DeniLescano/GrupoW-Proyecto-TUDW
-    cd GrupoW-Proyecto-TUDW
-    ```
+Desde esta interfaz podrás ver todos los endpoints, sus parámetros, y ejecutar peticiones directamente. Para las rutas protegidas, sigue las instrucciones en la misma página para autenticarte usando un token JWT.
 
-2.  **Instalar Dependencias de Node.js:**
-    Navega a la carpeta de la API e instala los paquetes de npm.
-    ```bash
-    cd progiii-api
-    npm install
-    ```
+### 3.2. Probar con cURL (Línea de Comandos)
 
-3.  **Configurar la Base de Datos MySQL:**
-    - **Instala MySQL Server** en tu sistema (puedes seguir la guía para [Linux](https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/) o usar [MySQL Installer para Windows](https://dev.mysql.com/downloads/installer/)).
-    - Durante la instalación, asegúrate de guardar la **contraseña del usuario `root`**.
-    - Una vez instalado, inicia sesión en MySQL como `root` (ej: `sudo mysql` en Linux o usando MySQL Workbench en Windows).
-    - Ejecuta los siguientes comandos SQL para crear la base de datos y el usuario que usará la API:
-    ```sql
-    CREATE DATABASE reservas;
-    CREATE USER 'progiii_user'@'localhost' IDENTIFIED BY 'prog123';
-    GRANT ALL PRIVILEGES ON reservas.* TO 'progiii_user'@'localhost';
-    FLUSH PRIVILEGES;
-    EXIT;
-    ```
-    > **Nota:** La contraseña `'prog123'` coincide con la que está configurada en el archivo `.env` del proyecto. Si decides usar una contraseña diferente, recuerda actualizarla en el archivo `.env`.
+Si prefieres usar la terminal, puedes utilizar `cURL`.
 
-### 3.3. Cargar Datos Iniciales
-
-Para que la aplicación funcione con datos de prueba, necesitas crear la estructura de las tablas y luego poblarlas.
-
-1.  **Crear la Estructura (Tablas):**
-    El archivo `database/migrations/001_initial_schema.sql` contiene la estructura de todas las tablas. Ejecuta el siguiente comando desde el directorio `progiii-api`:
-    ```bash
-    mysql -u progiii_user -p reservas < database/migrations/001_initial_schema.sql
-    ```
-    *(Te pedirá la contraseña que configuraste: `prog123`)*.
-
-2.  **Cargar los Datos (Semillas):**
-    El siguiente comando limpia las tablas (para evitar duplicados) y luego inserta los datos de prueba desde `database/seeds/initial_data.sql`.
-    ```bash
-    mysql -u progiii_user -p reservas < database/seeds/initial_data.sql
-    ```
-
-### 3.4. Iniciar el Servidor
-
-Una vez completados los pasos anteriores, puedes iniciar el servidor en modo de desarrollo:
+**1. Listar Salones (Público):**
 ```bash
-npm run dev
-```
-El servidor estará corriendo en `http://localhost:3000`.
-
-## 4. Funcionalidad Implementada
-
-Actualmente, la API cuenta con un BREAD (Browse, Read, Edit, Add, Delete) completo para la entidad **Salones**.
-
-### Endpoints de Salones (`/api/salones`)
-
--   **`GET /` (Browse):** Lista todos los salones activos.
--   **`GET /:id` (Read):** Muestra un salón específico por su ID.
--   **`POST /` (Add):** Crea un nuevo salón. Requiere un cuerpo JSON con `titulo`, `direccion`, `capacidad` e `importe`.
--   **`PUT /:id` (Edit):** Actualiza un salón existente. Requiere un cuerpo JSON con los campos a modificar.
--   **`DELETE /:id` (Delete):** Realiza un borrado lógico del salón (cambia el campo `activo` a `0`).
-
-**Ejemplo de cuerpo JSON para `POST` y `PUT`:**
-```json
-{
-    "titulo": "Nombre del Salón",
-    "direccion": "Dirección del Salón",
-    "capacidad": 100,
-    "importe": 150000.00
-}
+curl http://localhost:3000/api/salones
 ```
 
-## 5. Próximos Pasos y Mejoras
+**2. Listar Servicios (Público):**
+```bash
+curl http://localhost:3000/api/servicios
+```
 
-Para completar los requisitos del Trabajo Final, se deben abordar las siguientes funcionalidades:
+**3. Listar Turnos (Público):**
+```bash
+curl http://localhost:3000/api/turnos
+```
 
-**Prioridad Alta - Funcionalidad Central Faltante:**
+**4. Registrar un nuevo Cliente:**
+```bash
+curl -X POST http://localhost:3000/api/auth/register -H "Content-Type: application/json" -d \
+'{ 
+  "nombre": "Carlos",
+  "apellido": "Santana",
+  "nombre_usuario": "carlos.santana@correo.com",
+  "contrasenia": "guitarra123"
+}'
+```
 
-1.  **Autenticación con JWT:** Implementar un endpoint `/api/auth/login` que genere un token para proteger las rutas.
-2.  **Autorización por Roles:** Restringir el acceso a ciertos endpoints según el rol del usuario (Cliente, Empleado, Administrador).
-3.  **Completar BREAD para todas las Entidades:** Crear la lógica de rutas y controladores para `usuarios`, `turnos`, `servicios` y `reservas`.
+**5. Iniciar Sesión y Capturar el Token:**
+```bash
+# Ejecuta este comando y copia el "accessToken" de la respuesta.
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login -H "Content-Type: application/json" -d \
+'{ 
+  "nombre_usuario": "carlos.santana@correo.com",
+  "contrasenia": "guitarra123"
+}' | grep -o '"accessToken":"[^"]*' | cut -d '"' -f 4)
 
-**Prioridad Media - Requisitos Técnicos Adicionales:**
+echo "Token capturado: $TOKEN"
+```
 
-4.  **Documentación con Swagger:** Integrar `swagger-ui-express` y `swagger-jsdoc` para generar documentación interactiva.
-5.  **Validaciones con `express-validator`:** Reemplazar las validaciones manuales por middlewares de validación.
+**6. Crear una Reserva (como Cliente):**
+```bash
+curl -X POST http://localhost:3000/api/reservas \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer $TOKEN" \
+-d \
+'{ 
+  "salon_id": 1,
+  "turno_id": 2,
+  "fecha_reserva": "2025-12-31",
+  "tematica": "Fiesta de Fin de Año",
+  "servicios": [ { "servicio_id": 1 }, { "servicio_id": 4 } ]
+}'
+```
 
-**Prioridad Baja - Funcionalidades Adicionales:**
+**7. Listar Usuarios (como Administrador):**
+*(Primero inicia sesión con un usuario admin, como `oscram@correo.com`, para obtener un TOKEN de administrador)*
+```bash
+curl -X GET http://localhost:3000/api/usuarios -H "Authorization: Bearer $TOKEN_ADMIN"
+```
 
-6.  **Generación de Informes y Estadísticas:** Crear endpoints que ejecuten `stored procedures` para devolver datos procesados.
+### 3.3. Probar con cURL (PowerShell)
+
+Si estás en Windows, `curl` es un alias de `Invoke-WebRequest` y la sintaxis para el cuerpo de la petición cambia.
+
+**1. Listar Salones (Público):**
+```powershell
+curl http://localhost:3000/api/salones
+```
+
+**2. Listar Servicios (Público):**
+```powershell
+curl http://localhost:3000/api/servicios
+```
+
+**3. Listar Turnos (Público):**
+```powershell
+curl http://localhost:3000/api/turnos
+```
+
+**4. Registrar un nuevo Cliente:**
+```powershell
+curl -X POST http://localhost:3000/api/auth/register -H "Content-Type: application/json" -Body '{ "nombre": "Test", "apellido": "User", "nombre_usuario": "test.user@correo.com", "contrasenia": "password123" }'
+```
+
+**5. Iniciar Sesión y Capturar el Token:**
+```powershell
+$response = curl -X POST http://localhost:3000/api/auth/login -H "Content-Type: application/json" -Body '{ "nombre_usuario": "test.user@correo.com", "contrasenia": "password123" }' | ConvertFrom-Json
+$TOKEN = $response.accessToken
+echo "Token capturado: $TOKEN"
+```
+
+**6. Crear una Reserva (como Cliente):**
+```powershell
+$body = '{ "salon_id": 1, "turno_id": 2, "fecha_reserva": "2025-12-31", "tematica": "Fiesta de Fin de Año", "servicios": [ { "servicio_id": 1 }, { "servicio_id": 4 } ] }'
+curl -X POST http://localhost:3000/api/reservas -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -Body $body
+```
+
+## 4. Instalación
+
+1.  **Clonar Repositorio:** `git clone <URL_DEL_REPO>`
+2.  **Instalar Dependencias:** `cd progiii-api && npm install`
+3.  **Configurar `.env`:** Crea un archivo `.env` en la raíz de `progiii-api/` y configúralo con tus credenciales de MySQL:
+    ```
+    DB_HOST=localhost
+    DB_USER=tu_usuario_mysql
+    DB_PASSWORD=tu_contraseña_mysql
+    DB_DATABASE=reservas
+    JWT_SECRET=un_secreto_muy_largo_y_dificil_de_adivinar
+    ```
+4.  **Base de Datos:** Asegúrate de que el servidor MySQL esté activo y ejecuta los scripts de la carpeta `database/` para crear el esquema y poblar los datos.
+    ```bash
+    # Usando el script oficial del proyecto
+    mysql -u tu_usuario -p reservas < database/migrations/001_initial_schema.sql
+    mysql -u tu_usuario -p reservas < database/seeds/initial_data.sql
+    ```
+5.  **Iniciar Servidor:**
+    ```bash
+    npm run dev
+    ```
+
+## 5. Despliegue Local
+
+Para desplegar la aplicación en tu máquina local, sigue estos pasos:
+
+1.  **Instala MySQL:** Descarga e instala MySQL Community Server desde el [sitio web oficial](https://dev.mysql.com/downloads/mysql/).
+2.  **Crea la base de datos:**
+    *   Abre una terminal de MySQL o un cliente como MySQL Workbench.
+    *   Crea un usuario y una base de datos para el proyecto.
+        ```sql
+        CREATE DATABASE reservas;
+        CREATE USER 'user'@'localhost' IDENTIFIED BY 'password';
+        GRANT ALL PRIVILEGES ON reservas.* TO 'user'@'localhost';
+        FLUSH PRIVILEGES;
+        ```
+3.  **Configura el archivo `.env`:**
+    *   En el directorio `progiii-api`, renombra o copia `.env.example` a `.env` (si existe) o crea el archivo.
+    *   Modifica el archivo `.env` con las credenciales que creaste en el paso anterior.
+        ```
+        DB_HOST=localhost
+        DB_USER=user
+        DB_PASSWORD=password
+        DB_DATABASE=reservas
+        JWT_SECRET=un_secreto_muy_largo_y_dificil_de_adivinar
+        ```
+4.  **Carga el esquema y los datos iniciales:**
+    *   Desde la carpeta raíz del proyecto, ejecuta los siguientes comandos:
+        ```bash
+        mysql -u user -p reservas < progiii-api/database/migrations/001_initial_schema.sql
+        mysql -u user -p reservas < progiii-api/database/seeds/initial_data.sql
+        ```
+5.  **Instala las dependencias y ejecuta la aplicación:**
+    *   Navega a la carpeta `progiii-api` y ejecuta:
+        ```bash
+        npm install
+        npm run dev
+        ```
+6.  **Verifica la aplicación:**
+    *   La API debería estar corriendo en `http://localhost:3000`.
+    *   Puedes verificar la documentación de la API en `http://localhost:3000/api-docs`.
