@@ -1,16 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Referencias a elementos del DOM
+
     const cardsContainer = document.getElementById('salones-cards-container');
     const filterInput = document.getElementById('filter-input');
     const noResultsMessage = document.getElementById('no-results');
     
-    // Modales de Creación (ADD)
     const addModal = document.getElementById('add-modal');
     const openAddModalBtn = document.getElementById('open-add-modal-btn');
     const closeAddModalBtn = document.querySelector('.close-add-modal');
     const addSalonForm = document.getElementById('add-salon-form');
 
-    // Modales de Detalles/Edición (READ/EDIT/DELETE)
     const detailsModal = document.getElementById('details-modal');
     const closeDetailsModalBtn = document.querySelector('.close-details-modal');
     const salonDetailsView = document.getElementById('salon-details-view');
@@ -19,33 +17,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const deleteSalonBtn = document.getElementById('delete-salon-btn');
     
-    // Array para almacenar todos los salones obtenidos de la API
     let allSalones = []; 
     const API_URL = '/api/salones';
 
-    // ------------------------------------------------------------------------
-    // FUNCIONES DE CONTROL DE MODALES
-    // ------------------------------------------------------------------------
-    
-    // Abre el modal de CREACIÓN
     openAddModalBtn.addEventListener('click', () => {
         addModal.style.display = 'flex';
-        addSalonForm.reset(); // Asegura que el formulario esté limpio
+        addSalonForm.reset(); 
     });
 
-    // Cierra el modal de CREACIÓN
     closeAddModalBtn.addEventListener('click', () => {
         addModal.style.display = 'none';
     });
 
-    // Cierra el modal de DETALLES/EDICIÓN
     closeDetailsModalBtn.addEventListener('click', () => {
         detailsModal.style.display = 'none';
-        // Vuelve al modo "Ver Detalles" al cerrar
+
         showViewMode(); 
     });
 
-    // Cierra el modal al hacer clic fuera
     window.addEventListener('click', (event) => {
         if (event.target === addModal) {
             addModal.style.display = 'none';
@@ -56,9 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ------------------------------------------------------------------------
-    // FUNCIÓN PRINCIPAL: BROWSE (Leer/Listar)
-    // ------------------------------------------------------------------------
     async function fetchSalones() {
         try {
             const response = await fetch(API_URL);
@@ -76,12 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
             cardsContainer.innerHTML = `<p style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</p>`;
         }
     }
-
-    // ------------------------------------------------------------------------
-    // FUNCIÓN DE RENDERIZADO (Cards)
-    // ------------------------------------------------------------------------
+-
     function renderSalones(salonesToRender) {
-        cardsContainer.innerHTML = ''; // Limpia el contenedor
+        cardsContainer.innerHTML = ''; 
 
         if (salonesToRender.length === 0) {
             noResultsMessage.style.display = 'block';
@@ -93,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         salonesToRender.forEach(salon => {
             const card = document.createElement('div');
             card.className = 'salon-card';
-            card.dataset.id = salon.salon_id; // Útil para identificar la tarjeta
+            card.dataset.id = salon.salon_id; 
 
             card.innerHTML = `
                 <h3 class="card-title">${salon.titulo}</h3>
@@ -103,16 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="view-btn" data-id="${salon.salon_id}">Modificar</button>
             `;
 
-            // Añadir evento al botón "Modificar"
             card.querySelector('.view-btn').addEventListener('click', () => openDetailsModal(salon));
 
             cardsContainer.appendChild(card);
         });
     }
 
-    // ------------------------------------------------------------------------
-    // FUNCIÓN DE FILTRADO (BROWSE)
-    // ------------------------------------------------------------------------
     window.filterSalones = function() {
         const filterText = filterInput.value.toLowerCase();
         
@@ -125,9 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSalones(filteredSalones);
     }
     
-    // ------------------------------------------------------------------------
-    // FUNCIÓN ADD: POST (Crear)
-    // ------------------------------------------------------------------------
     addSalonForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -152,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             alert('Salón creado correctamente!');
             addModal.style.display = 'none';
-            fetchSalones(); // Recargar la lista
+            fetchSalones(); 
 
         } catch (error) {
             alert(`Error al agregar: ${error.message}`);
@@ -160,40 +136,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ------------------------------------------------------------------------
-    // FUNCIÓN READ/EDIT/DELETE (Modal de Detalles/Acciones)
-    // ------------------------------------------------------------------------
-
-    // Muestra los detalles del salón en el modal
     function openDetailsModal(salon) {
-        // 1. Rellena la vista de detalles
         document.getElementById('view-titulo').textContent = salon.titulo;
         document.getElementById('view-direccion').textContent = salon.direccion;
         document.getElementById('view-capacidad').textContent = salon.capacidad;
         document.getElementById('view-importe').textContent = `$${parseFloat(salon.importe).toFixed(2)}`;
         
-        // 2. Rellena el formulario de edición (oculto)
         document.getElementById('edit-id').value = salon.salon_id;
         document.getElementById('edit-titulo').value = salon.titulo;
         document.getElementById('edit-direccion').value = salon.direccion;
         document.getElementById('edit-capacidad').value = salon.capacidad;
         document.getElementById('edit-importe').value = salon.importe;
         
-        // 3. Establece el ID para el botón de eliminar
         deleteSalonBtn.dataset.id = salon.salon_id;
 
-        // 4. Muestra el modal en modo "Ver"
         showViewMode();
         detailsModal.style.display = 'flex';
     }
 
-    // Cambia el modal al modo de edición
     openEditFormBtn.addEventListener('click', () => {
         salonDetailsView.style.display = 'none';
         editSalonForm.style.display = 'block';
     });
 
-    // Vuelve al modo de vista desde la edición
     cancelEditBtn.addEventListener('click', showViewMode);
     function showViewMode() {
         salonDetailsView.style.display = 'block';
@@ -201,9 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // ------------------------------------------------------------------------
-    // FUNCIÓN EDIT: PUT (Actualizar)
-    // ------------------------------------------------------------------------
     editSalonForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -238,9 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ------------------------------------------------------------------------
-    // FUNCIÓN DELETE: PUT (Soft Delete)
-    // ------------------------------------------------------------------------
+
     deleteSalonBtn.addEventListener('click', async () => {
         const id = deleteSalonBtn.dataset.id;
         
@@ -269,8 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // ------------------------------------------------------------------------
-    // EJECUCIÓN INICIAL
-    // ------------------------------------------------------------------------
+
     fetchSalones();
 });

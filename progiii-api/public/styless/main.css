@@ -1,11 +1,11 @@
-/* VARIABLES y RESET BÁSICO */
+
 :root {
-    --primary-color: #007bff; /* Azul vibrante */
-    --secondary-color: #28a745; /* Verde para acciones de éxito */
-    --danger-color: #dc3545; /* Rojo para eliminar */
-    --warning-color: #ffc107; /* Amarillo para editar */
-    --light-bg: #f8f9fa; /* Fondo claro */
-    --dark-text: #343a40; /* Texto oscuro */
+    --primary-color: #007bff; 
+    --secondary-color: #28a745; 
+    --danger-color: #dc3545; 
+    --warning-color: #ffc107; 
+    --light-bg: #f8f9fa;
+    --dark-text: #343a40; 
     --card-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
     --border-radius: 0.3rem;
 }
@@ -24,9 +24,6 @@ body {
     line-height: 1.6;
 }
 
-/* ------------------------------------------------------------------------ */
-/* CABECERA Y CONTROLES (Filtro y Botón) */
-/* ------------------------------------------------------------------------ */
 header {
     text-align: center;
     margin-bottom: 40px;
@@ -60,9 +57,6 @@ h1 {
 }
 
 
-/* ------------------------------------------------------------------------ */
-/* ESTILOS DE BOTONES BASE */
-/* ------------------------------------------------------------------------ */
 button {
     padding: 10px 18px;
     border: none;
@@ -110,11 +104,9 @@ button:active {
 .cancel-btn:hover { background-color: #5a6268; }
 
 
-/* ------------------------------------------------------------------------ */
-/* DISEÑO DE TARJETAS (Cards Grid) */
-/* ------------------------------------------------------------------------ */
+
 .cards-grid {
-    /* USANDO CSS GRID para el diseño responsivo */
+  
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
     gap: 30px;
@@ -155,9 +147,6 @@ button:active {
     color: var(--dark-text);
 }
 
-/* ------------------------------------------------------------------------ */
-/* MODAL */
-/* ------------------------------------------------------------------------ */
 .modal {
     position: fixed;
     top: 0;
@@ -230,9 +219,7 @@ button:active {
     flex: 1;
 }
 
-/* ------------------------------------------------------------------------ */
-/* RESPONSIVIDAD (Ajustes para Pantallas Pequeñas) */
-/* ------------------------------------------------------------------------ */
+
 @media (max-width: 768px) {
     body {
         padding: 10px;
