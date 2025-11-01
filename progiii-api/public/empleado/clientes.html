@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listar Clientes - Empleado</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isEmpleado()) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1>Listar Clientes</h1>
+    </nav>
+
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input" 
+                placeholder="Buscar por nombre o usuario..." 
+                onkeyup="filterClientes()"
+            >
+        </div>
+    </header>
+
+    <div class="table-container">
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Completo</th>
+                    <th>Usuario</th>
+                    <th>Celular</th>
+                    <th>Estado</th>
+                    <th>Reservas</th>
+                    <th>Creado</th>
+                </tr>
+            </thead>
+            <tbody id="clientes-body">
+            </tbody>
+        </table>
+    </div>
+
+    <p id="no-results" style="display: none; text-align: center; color: gray;">
+        No se encontraron clientes.
+    </p>
+
+    <script src="../scripts/empleado-clientes.js" defer></script>
+</body>
+</html>
+

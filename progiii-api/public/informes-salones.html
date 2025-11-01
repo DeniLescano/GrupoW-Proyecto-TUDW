@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informes de Salones</title>
+    <link rel="stylesheet" href="styless/main.css">
+</head>
+<body>
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/icons.js"></script>
+    <script>
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="scripts/sidebar.js" defer></script>
+    <nav class="main-nav">
+        <h1><img src="img/salones.png" alt="Informes" style="width: 40px; height: 40px; vertical-align: middle; margin-right: 10px;"> Informes de Salones</h1>
+        <button id="export-pdf-btn" class="add-btn"><img src="img/export pdf.png" alt="PDF" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 5px;"> Exportar a PDF</button>
+        <button id="export-csv-btn" class="edit-btn"><img src="img/export csv.png" alt="CSV" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 5px;"> Exportar a CSV</button>
+    </nav>
+
+    <div class="informes-container">
+        <!-- Estadísticas Generales -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/salones.png" alt="Salones" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="total-salones">-</div>
+                <div class="stat-label">Total de Salones</div>
+            </div>
+            <div class="stat-card stat-active">
+                <div class="stat-icon"><img src="img/salones.png" alt="Activos" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="salones-activos">-</div>
+                <div class="stat-label">Salones Activos</div>
+            </div>
+            <div class="stat-card stat-inactive">
+                <div class="stat-icon"><img src="img/salones.png" alt="Inactivos" style="width: 50px; height: 50px; opacity: 0.5;"></div>
+                <div class="stat-value" id="salones-inactivos">-</div>
+                <div class="stat-label">Salones Inactivos</div>
+            </div>
+        </div>
+
+        <!-- Estadísticas de Capacidad -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/salones.png" alt="Capacidad Total" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="capacidad-total">-</div>
+                <div class="stat-label">Capacidad Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/salones.png" alt="Capacidad Promedio" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="capacidad-promedio">-</div>
+                <div class="stat-label">Capacidad Promedio</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/salones.png" alt="Capacidad Máxima" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="capacidad-maxima">-</div>
+                <div class="stat-label">Capacidad Máxima</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/salones.png" alt="Capacidad Mínima" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="capacidad-minima">-</div>
+                <div class="stat-label">Capacidad Mínima</div>
+            </div>
+        </div>
+
+        <!-- Estadísticas de Importes -->
+        <div class="stats-grid">
+            <div class="stat-card stat-money">
+                <div class="stat-icon"><img src="img/salones.png" alt="Importe Total" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="importe-total">-</div>
+                <div class="stat-label">Importe Total</div>
+            </div>
+            <div class="stat-card stat-money">
+                <div class="stat-icon"><img src="img/salones.png" alt="Importe Promedio" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="importe-promedio">-</div>
+                <div class="stat-label">Importe Promedio</div>
+            </div>
+            <div class="stat-card stat-money">
+                <div class="stat-icon"><img src="img/salones.png" alt="Importe Máximo" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="importe-maximo">-</div>
+                <div class="stat-label">Importe Máximo</div>
+            </div>
+            <div class="stat-card stat-money">
+                <div class="stat-icon"><img src="img/salones.png" alt="Importe Mínimo" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="importe-minimo">-</div>
+                <div class="stat-label">Importe Mínimo</div>
+            </div>
+        </div>
+
+        <!-- Tabla de Detalles -->
+        <div class="table-container">
+            <h2>Detalle de Salones</h2>
+            <table class="usuarios-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Dirección</th>
+                        <th>Capacidad</th>
+                        <th>Importe</th>
+                        <th>Estado</th>
+                        <th>Creado</th>
+                    </tr>
+                </thead>
+                <tbody id="salones-detail-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="loading-message" style="text-align: center; padding: 40px; color: #6c757d;">
+        Cargando informes...
+    </div>
+
+    <div id="error-message" style="display: none; text-align: center; padding: 40px; color: var(--danger-color);">
+        Error al cargar los informes. Por favor, intenta nuevamente.
+    </div>
+
+    <!-- Modal de configuración de PDF -->
+    <div id="pdf-config-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-button close-pdf-config-modal">&times;</span>
+            <h2>Configuración del Reporte PDF</h2>
+            <form id="pdf-config-form">
+                <div class="pdf-options">
+                    <h3>Secciones a incluir:</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="include-estadisticas-generales" checked>
+                        Estadísticas Generales (Total, Activos, Inactivos)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="include-estadisticas-capacidad" checked>
+                        Estadísticas de Capacidad
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="include-estadisticas-importes" checked>
+                        Estadísticas de Importes
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="include-tabla-detalles" checked>
+                        Tabla de Detalles
+                    </label>
+                </div>
+                <div class="pdf-options">
+                    <h3>Filtros:</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="only-activos">
+                        Solo Salones Activos
+                    </label>
+                </div>
+                <div class="action-buttons-view" style="margin-top: 20px;">
+                    <button type="submit" class="add-btn">Generar PDF</button>
+                    <button type="button" class="cancel-btn close-pdf-config-modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        // Verificar autenticación - solo administradores pueden acceder
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="scripts/informes-salones.js" defer></script>
+</body>
+</html>
+

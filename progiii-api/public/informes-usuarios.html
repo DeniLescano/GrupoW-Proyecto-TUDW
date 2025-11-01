@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informes de Usuarios</title>
+    <link rel="stylesheet" href="styless/main.css">
+</head>
+<body>
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/icons.js"></script>
+    <script>
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="scripts/sidebar.js" defer></script>
+    <nav class="main-nav">
+        <h1><img src="img/usuarios.png" alt="Informes" style="width: 40px; height: 40px; vertical-align: middle; margin-right: 10px;"> Informes de Usuarios</h1>
+        <button id="export-pdf-btn" class="add-btn"><img src="img/export pdf.png" alt="PDF" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 5px;"> Exportar a PDF</button>
+        <button id="export-csv-btn" class="edit-btn"><img src="img/export csv.png" alt="CSV" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 5px;"> Exportar a CSV</button>
+    </nav>
+
+    <div class="informes-container">
+        <!-- Estadísticas Generales -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/usuarios.png" alt="Usuarios" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="total-usuarios">-</div>
+                <div class="stat-label">Total de Usuarios</div>
+            </div>
+            <div class="stat-card stat-active">
+                <div class="stat-icon"><img src="img/usuarios.png" alt="Activos" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="usuarios-activos">-</div>
+                <div class="stat-label">Usuarios Activos</div>
+            </div>
+            <div class="stat-card stat-inactive">
+                <div class="stat-icon"><img src="img/usuarios.png" alt="Inactivos" style="width: 50px; height: 50px; opacity: 0.5;"></div>
+                <div class="stat-value" id="usuarios-inactivos">-</div>
+                <div class="stat-label">Usuarios Inactivos</div>
+            </div>
+        </div>
+
+        <!-- Distribución por Tipo de Usuario -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/cliente.png" alt="Clientes" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="tipo-1">-</div>
+                <div class="stat-label">Clientes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/empleados.png" alt="Empleados" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="tipo-2">-</div>
+                <div class="stat-label">Empleados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/administrador.png" alt="Administradores" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="tipo-3">-</div>
+                <div class="stat-label">Administradores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/usuarios.png" alt="Otros" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="otros-tipos">-</div>
+                <div class="stat-label">Otros Tipos</div>
+            </div>
+        </div>
+
+        <!-- Estadísticas Temporales -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/usuarios.png" alt="Este Mes" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="usuarios-mes">-</div>
+                <div class="stat-label">Creados este Mes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/usuarios.png" alt="Esta Semana" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="usuarios-semana">-</div>
+                <div class="stat-label">Creados esta Semana</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/usuarios.png" alt="Con Celular" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="usuarios-con-celular">-</div>
+                <div class="stat-label">Con Celular</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="img/usuarios.png" alt="Con Foto" style="width: 50px; height: 50px;"></div>
+                <div class="stat-value" id="usuarios-con-foto">-</div>
+                <div class="stat-label">Con Foto</div>
+            </div>
+        </div>
+
+        <!-- Tabla de Detalles -->
+        <div class="table-container">
+            <h2>Detalle de Usuarios</h2>
+            <table class="usuarios-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre Completo</th>
+                        <th>Usuario</th>
+                        <th>Tipo</th>
+                        <th>Celular</th>
+                        <th>Estado</th>
+                        <th>Creado</th>
+                    </tr>
+                </thead>
+                <tbody id="usuarios-detail-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="loading-message" style="text-align: center; padding: 40px; color: #6c757d;">
+        Cargando informes...
+    </div>
+
+    <div id="error-message" style="display: none; text-align: center; padding: 40px; color: var(--danger-color);">
+        Error al cargar los informes. Por favor, intenta nuevamente.
+    </div>
+
+    <!-- Modal de configuración de PDF -->
+    <div id="pdf-config-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-button close-pdf-config-modal">&times;</span>
+            <h2>Configuración del Reporte PDF</h2>
+            <form id="pdf-config-form">
+                <div class="pdf-options">
+                    <h3>Secciones a incluir:</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="include-estadisticas-generales" checked>
+                        Estadísticas Generales (Total, Activos, Inactivos)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="include-distribucion-tipo" checked>
+                        Distribución por Tipo de Usuario
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="include-estadisticas-temporales" checked>
+                        Estadísticas Temporales
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="include-tabla-detalles" checked>
+                        Tabla de Detalles
+                    </label>
+                </div>
+                <div class="pdf-options">
+                    <h3>Filtros:</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="only-activos">
+                        Solo Usuarios Activos
+                    </label>
+                </div>
+                <div class="action-buttons-view" style="margin-top: 20px;">
+                    <button type="submit" class="add-btn">Generar PDF</button>
+                    <button type="button" class="cancel-btn close-pdf-config-modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        // Verificar autenticación - solo administradores pueden acceder
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="scripts/informes-usuarios.js" defer></script>
+</body>
+</html>
+

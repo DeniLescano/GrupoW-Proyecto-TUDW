@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Turnos - Empleado</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.hasRole('empleado', 'administrador')) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1>Gestión de Turnos</h1>
+    </nav>
+
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input" 
+                placeholder="Buscar por horario..." 
+                onkeyup="filterTurnos()"
+            >
+            <button id="open-add-modal-btn" class="add-btn">Crear Nuevo Turno</button>
+        </div>
+    </header>
+
+    <div class="table-container">
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Orden</th>
+                    <th>Hora Desde</th>
+                    <th>Hora Hasta</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="turnos-body">
+            </tbody>
+        </table>
+    </div>
+
+    <p id="no-results" style="display: none; text-align: center; color: gray;">
+        No se encontraron turnos.
+    </p>
+
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-add-modal">&times;</span>
+            <h2>Crear Nuevo Turno</h2>
+            <form id="add-turno-form">
+                <div class="form-group">
+                    <label for="add-orden"><strong>Orden:</strong></label>
+                    <input type="number" id="add-orden" placeholder="Orden (ej: 1, 2, 3...)" required min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-hora-desde"><strong>Hora Desde:</strong></label>
+                    <input type="time" id="add-hora-desde" placeholder="Hora Desde" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-hora-hasta"><strong>Hora Hasta:</strong></label>
+                    <input type="time" id="add-hora-hasta" placeholder="Hora Hasta" required>
+                </div>
+                
+                <div class="action-buttons-edit" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button type="submit" class="add-btn" style="width: 100%;">Guardar Turno</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-details-modal">&times;</span>
+            <h2>Detalles del Turno</h2>
+            
+            <div id="turno-details-view">
+                <p><strong>ID:</strong> <span id="view-id"></span></p>
+                <p><strong>Orden:</strong> <span id="view-orden"></span></p>
+                <p><strong>Hora Desde:</strong> <span id="view-hora-desde"></span></p>
+                <p><strong>Hora Hasta:</strong> <span id="view-hora-hasta"></span></p>
+                <p><strong>Estado:</strong> <span id="view-estado"></span></p>
+                <p><strong>Creado:</strong> <span id="view-creado"></span></p>
+                
+                <div class="action-buttons-view">
+                    <button id="open-edit-form-btn" class="edit-btn">Editar</button>
+                    <button id="delete-turno-btn" class="delete-btn">Eliminar</button>
+                </div>
+            </div>
+
+            <form id="edit-turno-form" style="display: none;">
+                <h3>Editar Datos del Turno</h3>
+                
+                <input type="hidden" id="edit-id">
+                
+                <div class="form-group">
+                    <label for="edit-orden"><strong>Orden:</strong></label>
+                    <input type="number" id="edit-orden" placeholder="Orden" required min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-hora-desde"><strong>Hora Desde:</strong></label>
+                    <input type="time" id="edit-hora-desde" placeholder="Hora Desde" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-hora-hasta"><strong>Hora Hasta:</strong></label>
+                    <input type="time" id="edit-hora-hasta" placeholder="Hora Hasta" required>
+                </div>
+                
+                <div class="action-buttons-edit">
+                    <button type="submit" class="edit-btn">Guardar Cambios</button>
+                    <button type="button" id="cancel-edit-btn" class="cancel-btn">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../scripts/empleado-turnos.js" defer></script>
+</body>
+</html>
+

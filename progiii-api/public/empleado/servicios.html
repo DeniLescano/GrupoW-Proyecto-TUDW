@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Servicios - Empleado</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.hasRole('empleado', 'administrador')) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1>Gestión de Servicios</h1>
+    </nav>
+
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input" 
+                placeholder="Buscar por descripción..." 
+                onkeyup="filterServicios()"
+            >
+            <button id="open-add-modal-btn" class="add-btn">Crear Nuevo Servicio</button>
+        </div>
+    </header>
+
+    <div class="table-container">
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Descripción</th>
+                    <th>Importe</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="servicios-body">
+            </tbody>
+        </table>
+    </div>
+
+    <p id="no-results" style="display: none; text-align: center; color: gray;">
+        No se encontraron servicios.
+    </p>
+
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-add-modal">&times;</span>
+            <h2>Crear Nuevo Servicio</h2>
+            <form id="add-servicio-form">
+                <div class="form-group">
+                    <label for="add-descripcion"><strong>Descripción:</strong></label>
+                    <input type="text" id="add-descripcion" placeholder="Ingrese la descripción del servicio" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-importe"><strong>Importe ($):</strong></label>
+                    <input type="number" step="0.01" id="add-importe" placeholder="0.00" min="0" required>
+                </div>
+                
+                <div class="action-buttons-edit" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button type="submit" class="add-btn" style="width: 100%;">Guardar Servicio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-details-modal">&times;</span>
+            <h2>Detalles del Servicio</h2>
+            
+            <div id="servicio-details-view">
+                <p><strong>ID:</strong> <span id="view-id"></span></p>
+                <p><strong>Descripción:</strong> <span id="view-descripcion"></span></p>
+                <p><strong>Importe:</strong> <span id="view-importe"></span></p>
+                <p><strong>Estado:</strong> <span id="view-estado"></span></p>
+                <p><strong>Creado:</strong> <span id="view-creado"></span></p>
+                
+                <div class="action-buttons-view">
+                    <button id="open-edit-form-btn" class="edit-btn">Editar</button>
+                    <button id="delete-servicio-btn" class="delete-btn">Eliminar</button>
+                </div>
+            </div>
+
+            <form id="edit-servicio-form" style="display: none;">
+                <h3>Editar Datos del Servicio</h3>
+                
+                <input type="hidden" id="edit-id">
+                
+                <div class="form-group">
+                    <label for="edit-descripcion"><strong>Descripción:</strong></label>
+                    <input type="text" id="edit-descripcion" placeholder="Ingrese la descripción del servicio" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-importe"><strong>Importe ($):</strong></label>
+                    <input type="number" step="0.01" id="edit-importe" placeholder="0.00" min="0" required>
+                </div>
+                
+                <div class="action-buttons-edit">
+                    <button type="submit" class="edit-btn">Guardar Cambios</button>
+                    <button type="button" id="cancel-edit-btn" class="cancel-btn">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../scripts/empleado-servicios.js" defer></script>
+</body>
+</html>
+

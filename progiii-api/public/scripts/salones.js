@@ -18,7 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteSalonBtn = document.getElementById('delete-salon-btn');
     
     let allSalones = []; 
-    const API_URL = '/api/salones';
+    const API_URL = '/salones';
+    
+    // Verificar autenticación y permisos
+    if (!window.auth || !window.auth.isAuthenticated()) {
+        window.location.href = '../login.html';
+    }
 
   
     
@@ -77,7 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchSalones() {
         try {
-            const response = await fetch(API_URL);
+            // GET no necesita auth para ver salones activos
+            const response = await fetch(`http://localhost:3007/api${API_URL}`);
             if (!response.ok) {
                 throw new Error('Error al cargar los salones');
             }
@@ -137,23 +143,48 @@ document.addEventListener('DOMContentLoaded', () => {
     addSalonForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const titulo = document.getElementById('add-titulo').value.trim();
+        const direccion = document.getElementById('add-direccion').value.trim();
+        const capacidad = document.getElementById('add-capacidad').value;
+        const importe = document.getElementById('add-importe').value;
+        
+        if (!titulo || !direccion || !capacidad || !importe) {
+            alert('Todos los campos son obligatorios');
+            return;
+        }
+        
         const nuevoSalon = {
-            titulo: document.getElementById('add-titulo').value,
-            direccion: document.getElementById('add-direccion').value,
-            capacidad: parseInt(document.getElementById('add-capacidad').value),
-            importe: parseFloat(document.getElementById('add-importe').value),
+            titulo: titulo,
+            direccion: direccion,
+            capacidad: parseInt(capacidad),
+            importe: parseFloat(importe),
         };
 
         try {
-            const response = await fetch(API_URL, {
+            const response = await window.auth.fetchWithAuth(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(nuevoSalon),
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Error al crear el salón');
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { message: `Error ${response.status}: ${response.statusText}` };
+                }
+                
+                if (errorData.details && Array.isArray(errorData.details)) {
+                    const errorMessages = errorData.details.map(err => `${err.field}: ${err.message}`).join('\n');
+                    throw new Error(`Errores de validación:\n${errorMessages}`);
+                }
+                
+                if (errorData.errors && Array.isArray(errorData.errors)) {
+                    const errorMessages = errorData.errors.map(err => err.msg || err).join('\n');
+                    throw new Error(errorMessages);
+                }
+                
+                throw new Error(errorData.message || errorData.error || 'Error al crear el salón');
             }
 
             alert('Salón creado correctamente!');
@@ -178,9 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const response = await fetch(`${API_URL}/${id}`, {
+            const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(salonActualizado),
             });
 
@@ -209,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch(`${API_URL}/${id}`, {
+            const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
                 method: 'DELETE',
             });
 

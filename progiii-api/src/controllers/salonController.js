@@ -1,9 +1,13 @@
 const db = require('../config/database');
 
-// BROWSE - GET all active salones
+// BROWSE - GET all active salones (or all if ?all=true)
 exports.browse = async (req, res) => {
     try {
-        const [salones] = await db.query('SELECT * FROM salones WHERE activo = 1');
+        let query = 'SELECT * FROM salones';
+        if (req.query.all !== 'true') {
+            query += ' WHERE activo = 1';
+        }
+        const [salones] = await db.query(query);
         res.json(salones);
     } catch (error) {
         res.status(500).json({ message: 'Error al obtener los salones', error: error.message });
@@ -89,5 +93,51 @@ exports.delete = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ message: 'Error al eliminar el salón', error: error.message });
+    }
+};
+
+// DISPONIBILIDAD - GET salones disponibles para una fecha/turno
+exports.disponibilidad = async (req, res) => {
+    const { fecha, turno_id } = req.query;
+    
+    if (!fecha) {
+        return res.status(400).json({ message: 'El parámetro fecha es requerido (YYYY-MM-DD)' });
+    }
+
+    try {
+        // Obtener todos los salones activos
+        let query = `
+            SELECT s.*, 
+                   CASE 
+                     WHEN EXISTS (
+                       SELECT 1 FROM reservas r 
+                       WHERE r.salon_id = s.salon_id 
+                       AND r.fecha_reserva = ? 
+                       AND r.activo = 1
+                       ${turno_id ? 'AND r.turno_id = ?' : ''}
+                     ) THEN 0 
+                     ELSE 1 
+                   END as disponible
+            FROM salones s
+            WHERE s.activo = 1
+        `;
+        
+        const params = [fecha];
+        if (turno_id) {
+            params.push(turno_id);
+        }
+        
+        const [salones] = await db.query(query, params);
+        
+        res.json({
+            fecha,
+            turno_id: turno_id || null,
+            salones_disponibles: salones.filter(s => s.disponible === 1),
+            salones_ocupados: salones.filter(s => s.disponible === 0),
+            total: salones.length
+        });
+    } catch (error) {
+        console.error('Error al verificar disponibilidad:', error);
+        res.status(500).json({ message: 'Error al verificar disponibilidad', error: error.message });
     }
 };

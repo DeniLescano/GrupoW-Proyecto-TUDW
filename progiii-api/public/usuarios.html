@@ -3,13 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administración de Usuarios</title>
+    <title>Gestión de Usuarios</title>
     <link rel="stylesheet" href="styless/main.css">
 </head>
 <body>
-    <a href="index.html" class="nav-admin-btn view-btn">Gestión de Salones</a>
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/icons.js"></script>
+    <script>
+        // Verificar autenticación - solo administradores pueden acceder
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="scripts/sidebar.js" defer></script>
     <nav class="main-nav">
-        <h1>Administración de Usuarios</h1>
+        <h1>Gestión de Usuarios</h1>
     </nav>
     
     <header>
@@ -75,15 +83,49 @@
             <span class="close-button close-add-user-modal">&times;</span>
             <h2>Crear Nuevo Usuario</h2>
             <form id="add-user-form">
-                <input type="text" id="add-nombre" placeholder="Nombre" required>
-                <input type="text" id="add-apellido" placeholder="Apellido" required>
-                <input type="text" id="add-nombre-usuario" placeholder="Nombre de Usuario" required>
-                <input type="password" id="add-contrasenia" placeholder="Contraseña" required>
-                <input type="number" id="add-tipo-usuario" placeholder="Tipo de Usuario (ej: 1 o 2)" required>
-                <input type="text" id="add-celular" placeholder="Celular (opcional)">
-                <input type="text" id="add-foto" placeholder="URL de Foto (opcional)">
+                <div class="form-group">
+                    <label for="add-nombre"><strong>Nombre:</strong></label>
+                    <input type="text" id="add-nombre" placeholder="Ingrese el nombre" required>
+                </div>
                 
-                <button type="submit" class="add-btn">Guardar Usuario</button>
+                <div class="form-group">
+                    <label for="add-apellido"><strong>Apellido:</strong></label>
+                    <input type="text" id="add-apellido" placeholder="Ingrese el apellido" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-nombre-usuario"><strong>Nombre de Usuario (Email):</strong></label>
+                    <input type="text" id="add-nombre-usuario" placeholder="correo@ejemplo.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-contrasenia"><strong>Contraseña:</strong></label>
+                    <input type="password" id="add-contrasenia" placeholder="Ingrese la contraseña" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-tipo-usuario"><strong>Tipo de Usuario:</strong></label>
+                    <select id="add-tipo-usuario" required>
+                        <option value="">Seleccione un tipo</option>
+                        <option value="1">Cliente</option>
+                        <option value="2">Empleado</option>
+                        <option value="3">Administrador</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-celular"><strong>Celular:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="add-celular" placeholder="Ej: +54 9 11 1234-5678">
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-foto"><strong>URL de Foto:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="add-foto" placeholder="https://ejemplo.com/foto.jpg">
+                </div>
+                
+                <div class="action-buttons-edit" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button type="submit" class="add-btn" style="width: 100%;">Guardar Usuario</button>
+                </div>
             </form>
         </div>
     </div>
@@ -99,7 +141,7 @@
                 <p><strong>Nombre:</strong> <span id="view-nombre"></span></p>
                 <p><strong>Apellido:</strong> <span id="view-apellido"></span></p>
                 <p><strong>Usuario:</strong> <span id="view-nombre-usuario"></span></p>
-                <p><strong>Tipo:</strong> <span id="view-tipo-usuario"></span></p>
+                <p><strong>Tipo de Usuario:</strong> <span id="view-tipo-usuario"></span></p>
                 <p><strong>Celular:</strong> <span id="view-celular"></span></p>
                 <p><strong>Estado:</strong> <span id="view-activo"></span></p>
                 <p><strong>Creado:</strong> <span id="view-creado"></span></p>
@@ -108,23 +150,95 @@
                     <button id="open-edit-user-form-btn" class="edit-btn">Modificar Usuario</button>
                     <button id="delete-user-btn" class="delete-btn">Desactivar Usuario</button>
                 </div>
+                <div id="self-deactivate-warning" style="display: none; margin-top: 15px; padding: 10px; background-color: #fff3cd; border-left: 4px solid #ffc107; color: #856404;">
+                    <strong>⚠️ Advertencia:</strong> No puedes desactivar tu propio usuario. Si necesitas hacerlo, contacta a otro administrador.
+                </div>
             </div>
 
             <form id="edit-user-form" style="display: none;">
-                <h3>Editar Datos</h3>
-                <input type="hidden" id="edit-user-id"> 
-                <input type="text" id="edit-nombre" placeholder="Nombre" required>
-                <input type="text" id="edit-apellido" placeholder="Apellido" required>
-                <input type="text" id="edit-nombre-usuario" placeholder="Nombre de Usuario" required>
-                <input type="number" id="edit-tipo-usuario" placeholder="Tipo de Usuario" required>
-                <input type="text" id="edit-celular" placeholder="Celular">
-                <input type="text" id="edit-foto" placeholder="URL de Foto">
+                <h3>Editar Datos del Usuario</h3>
+                
+                <div class="form-group">
+                    <label for="edit-nombre"><strong>Nombre:</strong></label>
+                    <input type="text" id="edit-nombre" placeholder="Ingrese el nombre" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-apellido"><strong>Apellido:</strong></label>
+                    <input type="text" id="edit-apellido" placeholder="Ingrese el apellido" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-nombre-usuario"><strong>Nombre de Usuario (Email):</strong></label>
+                    <input type="text" id="edit-nombre-usuario" placeholder="correo@ejemplo.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-tipo-usuario"><strong>Tipo de Usuario:</strong></label>
+                    <select id="edit-tipo-usuario" required>
+                        <option value="1">Cliente</option>
+                        <option value="2">Empleado</option>
+                        <option value="3">Administrador</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-celular"><strong>Celular:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="edit-celular" placeholder="Ej: +54 9 11 1234-5678">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-foto"><strong>URL de Foto:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="edit-foto" placeholder="https://ejemplo.com/foto.jpg">
+                </div>
+                
+                <input type="hidden" id="edit-user-id">
                 
                 <div class="action-buttons-edit">
                     <button type="submit" class="edit-btn">Guardar Cambios</button>
                     <button type="button" id="cancel-edit-user-btn" class="cancel-btn">Cancelar</button>
                 </div>
             </form>
+            
+            <style>
+                .form-group {
+                    margin-bottom: 20px;
+                }
+                .form-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: #333;
+                    font-size: 14px;
+                }
+                .form-group input,
+                .form-group select {
+                    width: 100%;
+                    padding: 12px 15px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    font-size: 1rem;
+                    transition: border-color 0.3s;
+                    box-sizing: border-box;
+                }
+                .form-group input:focus,
+                .form-group select:focus {
+                    outline: none;
+                    border-color: var(--primary-color, #007bff);
+                }
+                .form-group select {
+                    background-color: white;
+                    cursor: pointer;
+                }
+                /* Asegurar que los botones estén visibles */
+                .action-buttons-edit {
+                    position: sticky;
+                    bottom: 0;
+                    background: white;
+                    padding-top: 15px;
+                    margin-top: 20px;
+                    border-top: 1px solid #e0e0e0;
+                }
+            </style>
 
         </div>
     </div>
