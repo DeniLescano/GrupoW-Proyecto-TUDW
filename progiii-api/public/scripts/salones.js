@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    const cardsContainer = document.getElementById('salones-cards-container');
+    const activosContainer = document.getElementById('salones-activos-container');
+    const inactivosContainer = document.getElementById('salones-inactivos-container');
     const filterInput = document.getElementById('filter-input');
     const noResultsMessage = document.getElementById('no-results');
     
@@ -45,13 +46,35 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('edit-importe').value = salon.importe;
         
         deleteSalonBtn.dataset.id = salon.salon_id;
+        
+        // Si el salón está desactivado, mostrar "Reactivar", si no "Desactivar"
+        if (salon.activo === 0 || salon.activo === false) {
+            deleteSalonBtn.textContent = 'Reactivar Salón';
+            deleteSalonBtn.className = 'activate-btn';
+        } else {
+            deleteSalonBtn.textContent = 'Desactivar Salón';
+            deleteSalonBtn.className = 'delete-btn';
+        }
+        
+        // Mostrar/ocultar botón de eliminación definitiva solo para salones desactivados
+        const permanentDeleteBtn = document.getElementById('permanent-delete-salon-btn');
+        if (permanentDeleteBtn) {
+            if (salon.activo === 0 || salon.activo === false) {
+                permanentDeleteBtn.style.display = 'block';
+                permanentDeleteBtn.dataset.id = salon.salon_id;
+            } else {
+                permanentDeleteBtn.style.display = 'none';
+            }
+        }
 
         showViewMode();
         detailsModal.style.display = 'flex';
+        detailsModal.classList.add('show');
     }
 
     function renderSalones(salonesToRender) {
-        cardsContainer.innerHTML = ''; 
+        activosContainer.innerHTML = '';
+        inactivosContainer.innerHTML = '';
 
         if (salonesToRender.length === 0) {
             noResultsMessage.style.display = 'block';
@@ -60,39 +83,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
         noResultsMessage.style.display = 'none';
 
-        salonesToRender.forEach(salon => {
-            const card = document.createElement('div');
-            card.className = 'salon-card';
-            card.dataset.id = salon.salon_id; 
+        const salonesActivos = salonesToRender.filter(s => s.activo === 1 || s.activo === true || s.activo === '1');
+        const salonesInactivos = salonesToRender.filter(s => s.activo === 0 || s.activo === false || s.activo === '0' || s.activo === null);
 
-            card.innerHTML = `
-                <h3 class="card-title">${salon.titulo}</h3>
-                <p class="card-info"><strong>Dirección:</strong> ${salon.direccion}</p>
-                <p class="card-info"><strong>Capacidad:</strong> ${salon.capacidad} personas</p>
-                <p class="card-info"><strong>Importe:</strong> $${parseFloat(salon.importe).toFixed(2)}</p>
-                <button class="view-btn" data-id="${salon.salon_id}">Modificar</button>
-            `;
-
-            card.querySelector('.view-btn').addEventListener('click', () => openDetailsModal(salon));
-
-            cardsContainer.appendChild(card);
+        salonesActivos.forEach(salon => {
+            const card = createSalonCard(salon);
+            activosContainer.appendChild(card);
         });
+
+        salonesInactivos.forEach(salon => {
+            const card = createSalonCard(salon, true);
+            inactivosContainer.appendChild(card);
+        });
+    }
+
+    function createSalonCard(salon, isInactive = false) {
+        const card = document.createElement('div');
+        card.className = 'salon-card';
+        if (isInactive) {
+            card.classList.add('salon-inactive');
+            card.style.opacity = '0.7';
+            card.style.border = '2px solid #dc3545';
+        }
+        card.dataset.id = salon.salon_id; 
+
+        card.innerHTML = `
+            <h3 class="card-title">${salon.titulo}</h3>
+            <p class="card-info"><strong>Dirección:</strong> ${salon.direccion}</p>
+            <p class="card-info"><strong>Capacidad:</strong> ${salon.capacidad} personas</p>
+            <p class="card-info"><strong>Importe:</strong> $${parseFloat(salon.importe).toFixed(2)}</p>
+            <p class="card-info"><strong>Estado:</strong> ${isInactive ? '❌ Desactivado' : '✅ Activo'}</p>
+            <button class="view-btn" data-id="${salon.salon_id}">Modificar</button>
+        `;
+
+        card.querySelector('.view-btn').addEventListener('click', () => openDetailsModal(salon));
+
+        return card;
     }
 
 
     async function fetchSalones() {
         try {
-            // GET no necesita auth para ver salones activos
-            const response = await fetch(`http://localhost:3007/api${API_URL}`);
+            // Incluir salones inactivos (soft delete) usando ?all=true
+            const response = await fetch(`http://localhost:3007/api${API_URL}?all=true`);
             if (!response.ok) {
                 throw new Error('Error al cargar los salones');
             }
-            allSalones = await response.json(); 
+            const data = await response.json();
+            
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            allSalones = (data.success && data.data) ? data.data : data;
             renderSalones(allSalones);
 
         } catch (error) {
             console.error('Fetch error:', error);
-            cardsContainer.innerHTML = `<p style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</p>`;
+            activosContainer.innerHTML = `<p style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</p>`;
+            inactivosContainer.innerHTML = '';
         }
     }
 
@@ -100,25 +146,38 @@ document.addEventListener('DOMContentLoaded', () => {
     
     openAddModalBtn.addEventListener('click', () => {
         addModal.style.display = 'flex';
+        addModal.classList.add('show');
         addSalonForm.reset(); 
     });
 
     closeAddModalBtn.addEventListener('click', () => {
-        addModal.style.display = 'none';
+        addModal.classList.remove('show');
+        setTimeout(() => {
+            addModal.style.display = 'none';
+        }, 300);
     });
 
     closeDetailsModalBtn.addEventListener('click', () => {
-        detailsModal.style.display = 'none';
-        showViewMode(); 
+        detailsModal.classList.remove('show');
+        setTimeout(() => {
+            detailsModal.style.display = 'none';
+            showViewMode();
+        }, 300);
     });
 
     window.addEventListener('click', (event) => {
         if (event.target === addModal) {
-            addModal.style.display = 'none';
+            addModal.classList.remove('show');
+            setTimeout(() => {
+                addModal.style.display = 'none';
+            }, 300);
         }
         if (event.target === detailsModal) {
-            detailsModal.style.display = 'none';
-            showViewMode(); 
+            detailsModal.classList.remove('show');
+            setTimeout(() => {
+                detailsModal.style.display = 'none';
+                showViewMode();
+            }, 300);
         }
     });
     
@@ -233,30 +292,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
     deleteSalonBtn.addEventListener('click', async () => {
         const id = deleteSalonBtn.dataset.id;
+        const salon = allSalones.find(s => s.salon_id == id);
+        const isInactive = salon && (salon.activo === 0 || salon.activo === false);
+        const action = isInactive ? 'reactivar' : 'desactivar';
         
-        if (!confirm(`¿Estás seguro de que quieres eliminar (desactivar) el salón ID ${id}?`)) {
+        if (!confirm(`¿Estás seguro de que quieres ${action} el salón ID ${id}?`)) {
             return;
         }
 
         try {
-            const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
-                method: 'DELETE',
-            });
+            if (isInactive) {
+                // Reactivar: actualizar activo = 1
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        titulo: salon.titulo,
+                        direccion: salon.direccion,
+                        capacidad: salon.capacidad,
+                        importe: salon.importe,
+                        activo: 1
+                    }),
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Error al eliminar el salón');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al reactivar el salón');
+                }
+
+                alert('Salón reactivado correctamente!');
+            } else {
+                // Desactivar: soft delete
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al desactivar el salón');
+                }
+
+                alert('Salón desactivado correctamente!');
             }
 
-            alert('Salón eliminado correctamente (Soft Delete)!');
             detailsModal.style.display = 'none'; 
             fetchSalones(); 
 
         } catch (error) {
-            alert(`Error al eliminar: ${error.message}`);
-            console.error('Error al eliminar salón:', error);
+            alert(`Error: ${error.message}`);
+            console.error(`Error al ${action} salón:`, error);
         }
     });
+
+    // Event listener para eliminación definitiva
+    const permanentDeleteBtn = document.getElementById('permanent-delete-salon-btn');
+    if (permanentDeleteBtn) {
+        permanentDeleteBtn.addEventListener('click', async () => {
+            const id = permanentDeleteBtn.dataset.id;
+            
+            // Confirmación con advertencia
+            const confirmMessage = `⚠️ ADVERTENCIA: Esta acción NO se puede deshacer.\n\n` +
+                `Estás a punto de eliminar definitivamente el salón ID ${id}.\n\n` +
+                `Esta acción eliminará permanentemente el salón de la base de datos.\n\n` +
+                `¿Estás completamente seguro de que deseas continuar?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Segunda confirmación
+            if (!confirm('Esta es tu última oportunidad. ¿Proceder con la eliminación definitiva?')) {
+                return;
+            }
+            
+            try {
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}/permanent`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al eliminar definitivamente el salón');
+                }
+                
+                alert('Salón eliminado definitivamente.');
+                detailsModal.style.display = 'none';
+                fetchSalones();
+            } catch (error) {
+                alert(`Error al eliminar definitivamente: ${error.message}`);
+                console.error('Error al eliminar definitivamente salón:', error);
+            }
+        });
+    }
 
 
     fetchSalones();

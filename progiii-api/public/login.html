@@ -178,12 +178,24 @@
                     throw new Error(data.message || data.error || 'Error al iniciar sesión');
                 }
 
+                // Verificar que la respuesta tenga la estructura esperada
+                if (!data.success || !data.data) {
+                    throw new Error('Formato de respuesta inválido del servidor');
+                }
+
+                // Extraer datos de la respuesta (la estructura es: { success: true, data: { token, usuario } })
+                const loginData = data.data;
+                
+                if (!loginData.token || !loginData.usuario) {
+                    throw new Error('Datos de autenticación incompletos');
+                }
+
                 // Guardar token y datos del usuario
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                localStorage.setItem('token', loginData.token);
+                localStorage.setItem('usuario', JSON.stringify(loginData.usuario));
 
                 // Redirigir según el tipo de usuario
-                redirectByRole(data.usuario.tipo_usuario);
+                redirectByRole(loginData.usuario.tipo_usuario);
 
             } catch (error) {
                 errorMessage.textContent = error.message;

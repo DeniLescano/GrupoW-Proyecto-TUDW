@@ -25,6 +25,18 @@ const cacheMiddleware = (ttl = 3600, keyPrefix = '') => {
       return next();
     }
 
+    // NO cachear archivos estáticos (HTML, CSS, JS, imágenes, etc.)
+    // Solo cachear rutas de API que empiecen con /api
+    if (!req.path.startsWith('/api')) {
+      return next();
+    }
+
+    // Verificar que la respuesta será JSON (no archivos estáticos)
+    // Si el request no es para API, saltar el cache
+    if (!req.path.startsWith('/api/v1') && !req.path.startsWith('/api/')) {
+      return next();
+    }
+
     // Generar clave de cache basada en URL y query params
     const cacheKey = keyPrefix + req.originalUrl || req.url;
     
@@ -42,10 +54,18 @@ const cacheMiddleware = (ttl = 3600, keyPrefix = '') => {
     
     // Sobrescribir res.json para cachear la respuesta
     res.json = function(data) {
-      // Cachear la respuesta
-      cache.set(cacheKey, data, ttl);
-      res.setHeader('X-Cache', 'MISS');
-      res.setHeader('Cache-Control', `public, max-age=${ttl}`);
+      // Solo cachear si la respuesta es JSON válido
+      if (data !== undefined && data !== null) {
+        try {
+          // Cachear la respuesta
+          cache.set(cacheKey, data, ttl);
+          res.setHeader('X-Cache', 'MISS');
+          res.setHeader('Cache-Control', `public, max-age=${ttl}`);
+        } catch (error) {
+          // Si hay error al cachear, continuar sin cachear
+          console.error('Error al cachear respuesta:', error);
+        }
+      }
       return originalJson(data);
     };
 

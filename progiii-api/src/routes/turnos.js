@@ -120,5 +120,30 @@ router.put('/:id', invalidateCacheAfterWrite('turnos'), authenticateToken, autho
  */
 router.delete('/:id', invalidateCacheAfterWrite('turnos'), authenticateToken, authorizeRoles('empleado', 'administrador'), deleteTurnoValidator, handleValidationErrors, turnoController.delete);
 
+/**
+ * @swagger
+ * /turnos/{id}/permanent:
+ *   delete:
+ *     summary: Eliminar definitivamente (hard delete) un turno
+ *     tags: [Turnos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del turno
+ *     responses:
+ *       200:
+ *         description: Turno eliminado definitivamente
+ *       403:
+ *         description: No se puede eliminar un turno activo
+ *       404:
+ *         description: Turno no encontrado
+ */
+router.delete('/:id/permanent', invalidateCacheAfterWrite('turnos'), authenticateToken, authorizeRoles('administrador'), deleteTurnoValidator, handleValidationErrors, turnoController.permanentDelete);
+
 module.exports = router;
 

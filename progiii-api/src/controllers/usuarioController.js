@@ -151,6 +151,35 @@ class UsuarioController {
       res.status(statusCode).json(response);
     }
   }
+
+  /**
+   * Eliminar definitivamente (hard delete) un usuario
+   * DELETE /api/v1/usuarios/:id/permanent
+   */
+  async permanentDelete(req, res) {
+    try {
+      const { id } = req.params;
+      const currentUserId = req.user ? req.user.usuario_id : null;
+      
+      await usuarioService.permanentDeleteUsuario(id, currentUserId);
+      
+      res.json(successResponse(null, 'Usuario eliminado definitivamente'));
+    } catch (error) {
+      if (error.message === 'Usuario no encontrado' || error.message.includes('no encontrado')) {
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
+      }
+      
+      if (error.message.includes('No puedes eliminar tu propio usuario') || error.message.includes('activo')) {
+        const { response, statusCode } = errorResponse(error.message, null, 403);
+        return res.status(statusCode).json(response);
+      }
+      
+      console.error('Error al eliminar definitivamente usuario:', error);
+      const { response, statusCode } = errorResponse('Error al eliminar definitivamente el usuario', error.message, 500);
+      res.status(statusCode).json(response);
+    }
+  }
 }
 
 module.exports = new UsuarioController();

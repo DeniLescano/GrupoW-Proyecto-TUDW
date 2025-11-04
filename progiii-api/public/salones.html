@@ -32,7 +32,16 @@
         </div>
     </header>
 
-    <div id="salones-cards-container" class="cards-grid">
+    <div class="table-container">
+        <h2>Salones Activos</h2>
+        <div id="salones-activos-container" class="cards-grid">
+        </div>
+    </div>
+    
+    <div class="table-container" style="margin-top: 40px;">
+        <h2 style="color: var(--danger-color, #dc3545);">Salones Desactivados</h2>
+        <div id="salones-inactivos-container" class="cards-grid">
+        </div>
     </div>
     
     <p id="no-results" style="display: none; text-align: center; color: gray;">
@@ -110,7 +119,8 @@
                 
                 <div class="action-buttons-view">
                     <button id="open-edit-form-btn" class="edit-btn">Editar</button>
-                    <button id="delete-salon-btn" class="delete-btn">Eliminar</button>
+                    <button id="delete-salon-btn" class="delete-btn">Desactivar</button>
+                    <button id="permanent-delete-salon-btn" class="danger-btn" style="display: none; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">⚠️ Eliminar Definitivamente</button>
                 </div>
             </div>
 

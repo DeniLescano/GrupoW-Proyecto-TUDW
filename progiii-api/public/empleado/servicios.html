@@ -33,6 +33,7 @@
     </header>
 
     <div class="table-container">
+        <h2>Servicios Activos</h2>
         <table class="usuarios-table">
             <thead>
                 <tr>
@@ -44,7 +45,25 @@
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="servicios-body">
+            <tbody id="servicios-activos-body">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-container" style="margin-top: 40px;">
+        <h2 style="color: var(--danger-color, #dc3545);">Servicios Desactivados</h2>
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Descripción</th>
+                    <th>Importe</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="servicios-inactivos-body">
             </tbody>
         </table>
     </div>
@@ -89,7 +108,8 @@
                 
                 <div class="action-buttons-view">
                     <button id="open-edit-form-btn" class="edit-btn">Editar</button>
-                    <button id="delete-servicio-btn" class="delete-btn">Eliminar</button>
+                    <button id="delete-servicio-btn" class="delete-btn">Desactivar</button>
+                    <button id="permanent-delete-servicio-btn" class="danger-btn" style="display: none; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">⚠️ Eliminar Definitivamente</button>
                 </div>
             </div>
 

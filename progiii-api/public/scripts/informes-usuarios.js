@@ -49,7 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!statsResponse.ok) {
                 throw new Error('Error al cargar las estadísticas');
             }
-            const estadisticas = await statsResponse.json();
+            const statsDataRaw = await statsResponse.json();
+            // Manejar respuesta estandarizada { success: true, data: {...} }
+            const estadisticas = (statsDataRaw.success && statsDataRaw.data) ? statsDataRaw.data : statsDataRaw;
             statsData = estadisticas;
 
             // Obtener todos los usuarios para la tabla
@@ -58,7 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Error al cargar los usuarios');
             }
             
-            const usuarios = await response.json();
+            const usuariosDataRaw = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            const usuarios = (usuariosDataRaw.success && usuariosDataRaw.data) ? usuariosDataRaw.data : usuariosDataRaw;
             allUsuariosData = usuarios;
             
             displayStats(estadisticas);

@@ -150,6 +150,34 @@ class SalonController {
   }
 
   /**
+   * Eliminar definitivamente (hard delete) un salón
+   * DELETE /api/v1/salones/:id/permanent
+   */
+  async permanentDelete(req, res) {
+    try {
+      const { id } = req.params;
+      
+      await salonService.permanentDeleteSalon(id);
+      
+      res.json(successResponse(null, 'Salón eliminado definitivamente'));
+    } catch (error) {
+      if (error.message === 'Salón no encontrado' || error.message.includes('no encontrado')) {
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
+      }
+      
+      if (error.message.includes('activo')) {
+        const { response, statusCode } = errorResponse(error.message, null, 403);
+        return res.status(statusCode).json(response);
+      }
+      
+      console.error('Error al eliminar definitivamente salón:', error);
+      const { response, statusCode } = errorResponse('Error al eliminar definitivamente el salón', error.message, 500);
+      res.status(statusCode).json(response);
+    }
+  }
+
+  /**
    * Verificar disponibilidad de salones para una fecha/turno
    * GET /api/v1/salones/disponibilidad?fecha=YYYY-MM-DD&turno_id=?
    */

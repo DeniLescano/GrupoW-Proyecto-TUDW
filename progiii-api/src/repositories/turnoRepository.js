@@ -161,6 +161,36 @@ class TurnoRepository {
     
     return result.affectedRows > 0;
   }
+
+  /**
+   * Eliminar definitivamente (hard delete) un turno
+   * Solo debe usarse cuando el turno ya está desactivado (soft delete)
+   * @param {number} id - ID del turno
+   * @returns {Promise<boolean>} true si se eliminó, false si no existe
+   */
+  async permanentDelete(id) {
+    // Verificar que el turno existe y está desactivado
+    const [checkResult] = await db.query(
+      'SELECT activo FROM turnos WHERE turno_id = ?',
+      [id]
+    );
+    
+    if (checkResult.length === 0) {
+      return false;
+    }
+    
+    if (checkResult[0].activo === 1) {
+      throw new Error('No se puede eliminar definitivamente un turno activo. Primero debe ser desactivado.');
+    }
+    
+    // Realizar eliminación física
+    const [result] = await db.query(
+      'DELETE FROM turnos WHERE turno_id = ?',
+      [id]
+    );
+    
+    return result.affectedRows > 0;
+  }
 }
 
 module.exports = new TurnoRepository();

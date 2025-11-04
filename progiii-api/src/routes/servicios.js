@@ -120,5 +120,30 @@ router.put('/:id', invalidateCacheAfterWrite('servicios'), authenticateToken, au
  */
 router.delete('/:id', invalidateCacheAfterWrite('servicios'), authenticateToken, authorizeRoles('empleado', 'administrador'), deleteServicioValidator, handleValidationErrors, servicioController.delete);
 
+/**
+ * @swagger
+ * /servicios/{id}/permanent:
+ *   delete:
+ *     summary: Eliminar definitivamente (hard delete) un servicio
+ *     tags: [Servicios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del servicio
+ *     responses:
+ *       200:
+ *         description: Servicio eliminado definitivamente
+ *       403:
+ *         description: No se puede eliminar un servicio activo
+ *       404:
+ *         description: Servicio no encontrado
+ */
+router.delete('/:id/permanent', invalidateCacheAfterWrite('servicios'), authenticateToken, authorizeRoles('administrador'), deleteServicioValidator, handleValidationErrors, servicioController.permanentDelete);
+
 module.exports = router;
 

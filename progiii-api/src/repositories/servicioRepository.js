@@ -199,6 +199,36 @@ class ServicioRepository {
     
     return result.affectedRows > 0;
   }
+
+  /**
+   * Eliminar definitivamente (hard delete) un servicio
+   * Solo debe usarse cuando el servicio ya está desactivado (soft delete)
+   * @param {number} id - ID del servicio
+   * @returns {Promise<boolean>} true si se eliminó, false si no existe
+   */
+  async permanentDelete(id) {
+    // Verificar que el servicio existe y está desactivado
+    const [checkResult] = await db.query(
+      'SELECT activo FROM servicios WHERE servicio_id = ?',
+      [id]
+    );
+    
+    if (checkResult.length === 0) {
+      return false;
+    }
+    
+    if (checkResult[0].activo === 1) {
+      throw new Error('No se puede eliminar definitivamente un servicio activo. Primero debe ser desactivado.');
+    }
+    
+    // Realizar eliminación física
+    const [result] = await db.query(
+      'DELETE FROM servicios WHERE servicio_id = ?',
+      [id]
+    );
+    
+    return result.affectedRows > 0;
+  }
 }
 
 module.exports = new ServicioRepository();

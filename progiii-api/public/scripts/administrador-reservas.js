@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const API_URL = '/reservas';
-    const reservasBody = document.getElementById('reservas-body');
+    const activosBody = document.getElementById('reservas-activas-body');
+    const inactivosBody = document.getElementById('reservas-inactivas-body');
     const addModal = document.getElementById('add-modal');
     const detailsModal = document.getElementById('details-modal');
     const closeAddModalBtn = document.querySelector('.close-add-modal');
@@ -78,7 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchUsuarios() {
         try {
             const response = await window.auth.fetchWithAuth('/usuarios');
-            allUsuarios = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            allUsuarios = (data.success && data.data) ? data.data : data;
             const select = document.getElementById('form-usuario-id');
             select.innerHTML = '<option value="">Seleccione un cliente</option>';
             allUsuarios.filter(u => u.activo === 1 && u.tipo_usuario === 1).forEach(usuario => {
@@ -95,7 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchServicios() {
         try {
             const response = await fetch('http://localhost:3007/api/servicios');
-            allServicios = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            allServicios = (data.success && data.data) ? data.data : data;
             const container = document.getElementById('servicios-checkboxes');
             container.innerHTML = '';
             allServicios.filter(s => s.activo === 1).forEach(servicio => {
@@ -119,18 +124,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchReservas() {
         try {
-            const response = await window.auth.fetchWithAuth(API_URL);
+            // Incluir reservas inactivas (soft delete) usando ?all=true
+            const response = await window.auth.fetchWithAuth(`${API_URL}?all=true`);
             if (!response.ok) throw new Error('Error al cargar las reservas');
-            allReservas = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            allReservas = (data.success && data.data) ? data.data : data;
             renderReservas(allReservas);
         } catch (error) {
             console.error('Error:', error);
-            reservasBody.innerHTML = `<tr><td colspan="10" style="color: red; text-align: center;">Error: ${error.message}</td></tr>`;
+            const errorMessageRow = `<tr><td colspan="10" style="color: red; text-align: center;">Error: ${error.message}</td></tr>`;
+            activosBody.innerHTML = errorMessageRow;
+            inactivosBody.innerHTML = errorMessageRow;
         }
     }
 
     function renderReservas(reservasToRender) {
-        reservasBody.innerHTML = '';
+        activosBody.innerHTML = '';
+        inactivosBody.innerHTML = '';
+        
         if (reservasToRender.length === 0) {
             noResults.style.display = 'block';
             return;
@@ -138,35 +150,40 @@ document.addEventListener('DOMContentLoaded', () => {
         noResults.style.display = 'none';
 
         const sorted = [...reservasToRender].sort((a, b) => new Date(b.fecha_reserva || 0) - new Date(a.fecha_reserva || 0));
+        const reservasActivas = sorted.filter(r => r.activo === 1 || r.activo === true || r.activo === '1');
+        const reservasInactivas = sorted.filter(r => r.activo === 0 || r.activo === false || r.activo === '0' || r.activo === null);
 
-        sorted.forEach(reserva => {
-            const row = reservasBody.insertRow();
-            if (reserva.activo === 0 || reserva.activo === false) {
-                row.classList.add('user-inactive-row');
-            }
+        reservasActivas.forEach(reserva => createRow(reserva, activosBody));
+        reservasInactivas.forEach(reserva => createRow(reserva, inactivosBody));
+    }
 
-            row.insertCell().textContent = reserva.reserva_id;
-            row.insertCell().textContent = formatDate(reserva.fecha_reserva);
-            row.insertCell().textContent = `${reserva.usuario_nombre || ''} ${reserva.usuario_apellido || ''}`.trim() || reserva.nombre_usuario || '-';
-            row.insertCell().textContent = reserva.salon_titulo || '-';
-            const turnoCell = row.insertCell();
-            turnoCell.textContent = reserva.hora_desde ? `${formatTime(reserva.hora_desde)} - ${formatTime(reserva.hora_hasta)}` : '-';
-            row.insertCell().textContent = reserva.tematica || '-';
-            row.insertCell().textContent = formatCurrency(reserva.importe_total);
-            row.insertCell().textContent = (reserva.activo === 1 || reserva.activo === true) ? 'Activa' : 'Cancelada';
-            row.insertCell().textContent = formatDateTime(reserva.creado);
+    function createRow(reserva, tbody) {
+        const row = tbody.insertRow();
+        if (reserva.activo === 0 || reserva.activo === false) {
+            row.classList.add('user-inactive-row');
+        }
 
-            const actionsCell = row.insertCell();
-            actionsCell.className = 'table-actions';
-            const viewBtn = document.createElement('button');
-            viewBtn.textContent = 'Ver / Editar';
-            viewBtn.className = 'edit-btn';
-            viewBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openDetailsModal(reserva);
-            });
-            actionsCell.appendChild(viewBtn);
+        row.insertCell().textContent = reserva.reserva_id;
+        row.insertCell().textContent = formatDate(reserva.fecha_reserva);
+        row.insertCell().textContent = `${reserva.usuario_nombre || ''} ${reserva.usuario_apellido || ''}`.trim() || reserva.nombre_usuario || '-';
+        row.insertCell().textContent = reserva.salon_titulo || '-';
+        const turnoCell = row.insertCell();
+        turnoCell.textContent = reserva.hora_desde ? `${formatTime(reserva.hora_desde)} - ${formatTime(reserva.hora_hasta)}` : '-';
+        row.insertCell().textContent = reserva.tematica || '-';
+        row.insertCell().textContent = formatCurrency(reserva.importe_total);
+        row.insertCell().textContent = (reserva.activo === 1 || reserva.activo === true) ? 'Activa' : 'Cancelada';
+        row.insertCell().textContent = formatDateTime(reserva.creado);
+
+        const actionsCell = row.insertCell();
+        actionsCell.className = 'table-actions';
+        const viewBtn = document.createElement('button');
+        viewBtn.textContent = 'Ver / Editar';
+        viewBtn.className = 'edit-btn';
+        viewBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openDetailsModal(reserva);
         });
+        actionsCell.appendChild(viewBtn);
     }
 
     function openDetailsModal(reserva) {
@@ -197,6 +214,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         deleteReservaBtn.dataset.id = reserva.reserva_id;
+        
+        // Si la reserva está desactivada, mostrar "Reactivar", si no "Desactivar"
+        if (reserva.activo === 0 || reserva.activo === false) {
+            deleteReservaBtn.textContent = 'Reactivar Reserva';
+            deleteReservaBtn.className = 'activate-btn';
+        } else {
+            deleteReservaBtn.textContent = 'Desactivar Reserva';
+            deleteReservaBtn.className = 'delete-btn';
+        }
+        
+        // Mostrar/ocultar botón de eliminación definitiva solo para reservas desactivadas
+        const permanentDeleteBtn = document.getElementById('permanent-delete-reserva-btn');
+        if (permanentDeleteBtn) {
+            if (reserva.activo === 0 || reserva.activo === false) {
+                permanentDeleteBtn.style.display = 'block';
+                permanentDeleteBtn.dataset.id = reserva.reserva_id;
+            } else {
+                permanentDeleteBtn.style.display = 'none';
+            }
+        }
+        
         detailsModal.style.display = 'flex';
     }
 
@@ -223,7 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await window.auth.fetchWithAuth(`${API_URL}/${reserva.reserva_id}`);
             if (response.ok) {
-                const reservaCompleta = await response.json();
+                const data = await response.json();
+                // Manejar respuesta estandarizada { success: true, data: {...} }
+                const reservaCompleta = (data.success && data.data) ? data.data : data;
                 document.getElementById('form-usuario-id').value = reservaCompleta.usuario_id || reserva.usuario_id || '';
                 
                 // Cargar servicios de la reserva completa
@@ -317,18 +357,100 @@ document.addEventListener('DOMContentLoaded', () => {
 
     deleteReservaBtn.addEventListener('click', async () => {
         const id = deleteReservaBtn.dataset.id;
-        if (!confirm(`¿Estás seguro de cancelar la reserva ID ${id}?`)) return;
+        const reserva = allReservas.find(r => r.reserva_id == id);
+        const isInactive = reserva && (reserva.activo === 0 || reserva.activo === false);
+        const action = isInactive ? 'reactivar' : 'desactivar';
+        
+        if (!confirm(`¿Estás seguro de que quieres ${action} la reserva ID ${id}?`)) {
+            return;
+        }
 
         try {
-            const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, { method: 'DELETE' });
-            if (!response.ok) throw new Error('Error al cancelar la reserva');
-            alert('Reserva cancelada correctamente (Soft Delete)!');
+            if (isInactive) {
+                // Reactivar: actualizar activo = 1 usando PUT
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        fecha_reserva: reserva.fecha_reserva,
+                        salon_id: reserva.salon_id,
+                        turno_id: reserva.turno_id,
+                        usuario_id: reserva.usuario_id,
+                        tematica: reserva.tematica,
+                        foto_cumpleaniero: reserva.foto_cumpleaniero,
+                        servicios: reserva.servicios ? reserva.servicios.map(s => s.servicio_id || s) : [],
+                        activo: 1
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al reactivar la reserva');
+                }
+
+                alert('Reserva reactivada correctamente!');
+            } else {
+                // Desactivar: soft delete
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al desactivar la reserva');
+                }
+
+                alert('Reserva desactivada correctamente!');
+            }
+
             detailsModal.style.display = 'none';
             fetchReservas();
         } catch (error) {
             alert(`Error: ${error.message}`);
+            console.error(`Error al ${action} reserva:`, error);
         }
     });
+
+    // Event listener para eliminación definitiva
+    const permanentDeleteBtn = document.getElementById('permanent-delete-reserva-btn');
+    if (permanentDeleteBtn) {
+        permanentDeleteBtn.addEventListener('click', async () => {
+            const id = permanentDeleteBtn.dataset.id;
+            
+            // Confirmación con advertencia
+            const confirmMessage = `⚠️ ADVERTENCIA: Esta acción NO se puede deshacer.\n\n` +
+                `Estás a punto de eliminar definitivamente la reserva ID ${id}.\n\n` +
+                `Esta acción eliminará permanentemente la reserva de la base de datos.\n\n` +
+                `¿Estás completamente seguro de que deseas continuar?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Segunda confirmación
+            if (!confirm('Esta es tu última oportunidad. ¿Proceder con la eliminación definitiva?')) {
+                return;
+            }
+            
+            try {
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}/permanent`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al eliminar definitivamente la reserva');
+                }
+                
+                alert('Reserva eliminada definitivamente.');
+                detailsModal.style.display = 'none';
+                fetchReservas();
+            } catch (error) {
+                alert(`Error al eliminar definitivamente: ${error.message}`);
+                console.error('Error al eliminar definitivamente reserva:', error);
+            }
+        });
+    }
+
 
     window.filterReservas = function() {
         const filterText = document.getElementById('filter-input').value.toLowerCase();

@@ -39,7 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!statsResponse.ok) {
                 throw new Error('Error al cargar las estadísticas');
             }
-            const estadisticas = await statsResponse.json();
+            const statsDataRaw = await statsResponse.json();
+            // Manejar respuesta estandarizada { success: true, data: {...} }
+            const estadisticas = (statsDataRaw.success && statsDataRaw.data) ? statsDataRaw.data : statsDataRaw;
             displayStats(estadisticas);
 
             // Obtener todos los salones para la tabla
@@ -48,7 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Error al cargar los salones');
             }
             
-            const allSalones = await response.json();
+            const salonesDataRaw = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            const allSalones = (salonesDataRaw.success && salonesDataRaw.data) ? salonesDataRaw.data : salonesDataRaw;
             allSalonesData = allSalones;
             statsData = estadisticas;
             displaySalonesTable(allSalones);

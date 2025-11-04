@@ -161,4 +161,29 @@ router.put('/:id', invalidateCacheAfterWrite('reservas'), authenticateToken, aut
  */
 router.delete('/:id', invalidateCacheAfterWrite('reservas'), authenticateToken, authorizeRoles('administrador'), deleteReservaValidator, handleValidationErrors, reservaController.delete);
 
+/**
+ * @swagger
+ * /reservas/{id}/permanent:
+ *   delete:
+ *     summary: Eliminar definitivamente (hard delete) una reserva
+ *     tags: [Reservas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la reserva
+ *     responses:
+ *       200:
+ *         description: Reserva eliminada definitivamente
+ *       403:
+ *         description: No se puede eliminar una reserva activa
+ *       404:
+ *         description: Reserva no encontrada
+ */
+router.delete('/:id/permanent', invalidateCacheAfterWrite('reservas'), authenticateToken, authorizeRoles('administrador'), deleteReservaValidator, handleValidationErrors, reservaController.permanentDelete);
+
 module.exports = router;

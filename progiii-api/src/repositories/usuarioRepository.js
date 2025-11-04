@@ -216,6 +216,36 @@ class UsuarioRepository {
     
     return result.affectedRows > 0;
   }
+
+  /**
+   * Eliminar definitivamente (hard delete) un usuario
+   * Solo debe usarse cuando el usuario ya está desactivado (soft delete)
+   * @param {number} id - ID del usuario
+   * @returns {Promise<boolean>} true si se eliminó, false si no existe
+   */
+  async permanentDelete(id) {
+    // Verificar que el usuario existe y está desactivado
+    const [checkResult] = await db.query(
+      'SELECT activo FROM usuarios WHERE usuario_id = ?',
+      [id]
+    );
+    
+    if (checkResult.length === 0) {
+      return false;
+    }
+    
+    if (checkResult[0].activo === 1) {
+      throw new Error('No se puede eliminar definitivamente un usuario activo. Primero debe ser desactivado.');
+    }
+    
+    // Realizar eliminación física
+    const [result] = await db.query(
+      'DELETE FROM usuarios WHERE usuario_id = ?',
+      [id]
+    );
+    
+    return result.affectedRows > 0;
+  }
 }
 
 module.exports = new UsuarioRepository();

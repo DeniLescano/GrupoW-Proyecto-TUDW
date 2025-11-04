@@ -174,13 +174,20 @@ class ReservaService {
    * @returns {Promise<Object>} Reserva actualizada
    */
   async updateReserva(id, reservaData) {
-    const { fecha_reserva, salon_id, turno_id, foto_cumpleaniero, tematica, servicios, estado } = reservaData;
+    const { fecha_reserva, salon_id, turno_id, foto_cumpleaniero, tematica, servicios, estado, activo } = reservaData;
     
     // Verificar que la reserva existe
     const reservaExistente = await reservaRepository.findBasicById(id);
     
     if (!reservaExistente) {
       throw new Error('Reserva no encontrada');
+    }
+    
+    // Si solo se está reactivando, permitir solo actualizar activo
+    if (activo !== undefined && !fecha_reserva && !salon_id && !turno_id && !servicios && !estado) {
+      const updateData = { activo };
+      await reservaRepository.update(id, updateData);
+      return await this.getReservaById(id);
     }
     
     let importe_salon = reservaExistente.importe_salon;
@@ -273,6 +280,10 @@ class ReservaService {
       cambios.push(`estado cambiado a ${estado}`);
     }
     
+    if (activo !== undefined) {
+      updateData.activo = activo;
+    }
+    
     updateData.importe_salon = importe_salon;
     updateData.importe_total = importe_total;
     
@@ -333,6 +344,34 @@ class ReservaService {
     }
     
     return usuarioId;
+  }
+
+  /**
+   * Eliminar definitivamente (hard delete) una reserva
+   * Solo funciona para reservas ya desactivadas (soft delete)
+   * @param {number} id - ID de la reserva
+   * @returns {Promise<boolean>} true si se eliminó
+   * @throws {Error} Si la reserva no existe o está activa
+   */
+  async permanentDeleteReserva(id) {
+    // Verificar que la reserva existe
+    const reserva = await reservaRepository.findBasicById(id);
+    if (!reserva) {
+      throw new Error('Reserva no encontrada');
+    }
+    
+    // Verificar que la reserva está desactivada
+    if (reserva.activo === 1) {
+      throw new Error('No se puede eliminar definitivamente una reserva activa. Primero debe ser desactivada.');
+    }
+    
+    const deleted = await reservaRepository.permanentDelete(id);
+    
+    if (!deleted) {
+      throw new Error('Reserva no encontrada para eliminar definitivamente');
+    }
+    
+    return true;
   }
 }
 

@@ -28,14 +28,15 @@ const authRoutes = require('./routes/auth');
 apiV1.use('/auth', authRoutes);
 
 // Rutas protegidas - aplicar rate limiting general
+// NOTA: Salones, servicios y turnos son públicos para GET, pero protegidos para POST/PUT/DELETE
 const salonesRoutes = require('./routes/salones');
-apiV1.use('/salones', protectedLimiter, salonesRoutes);
+apiV1.use('/salones', publicLimiter, salonesRoutes); // Usar publicLimiter para permitir acceso público a GET
 const usuariosRoutes = require('./routes/usuarios');
 apiV1.use('/usuarios', protectedLimiter, usuariosRoutes);
 const serviciosRoutes = require('./routes/servicios');
-apiV1.use('/servicios', protectedLimiter, serviciosRoutes);
+apiV1.use('/servicios', publicLimiter, serviciosRoutes); // Usar publicLimiter para permitir acceso público a GET
 const turnosRoutes = require('./routes/turnos');
-apiV1.use('/turnos', protectedLimiter, turnosRoutes);
+apiV1.use('/turnos', publicLimiter, turnosRoutes); // Usar publicLimiter para permitir acceso público a GET
 const reservasRoutes = require('./routes/reservas');
 apiV1.use('/reservas', protectedLimiter, reservasRoutes);
 const estadisticasRoutes = require('./routes/estadisticas');
@@ -49,15 +50,16 @@ apiV1.use('/notificaciones', protectedLimiter, notificacionesRoutes);
 app.use('/api/v1', apiV1);
 
 // Mantener compatibilidad con rutas antiguas (deprecated) - usar las mismas rutas
+// Aplicar rate limiting público a rutas que son públicas para GET
 app.use('/api/auth', authRoutes);
-app.use('/api/usuarios', usuariosRoutes);
-app.use('/api/salones', salonesRoutes);
-app.use('/api/servicios', serviciosRoutes);
-app.use('/api/turnos', turnosRoutes);
-app.use('/api/reservas', reservasRoutes);
+app.use('/api/usuarios', protectedLimiter, usuariosRoutes);
+app.use('/api/salones', publicLimiter, salonesRoutes); // Público para GET
+app.use('/api/servicios', publicLimiter, serviciosRoutes); // Público para GET
+app.use('/api/turnos', publicLimiter, turnosRoutes); // Público para GET
+app.use('/api/reservas', protectedLimiter, reservasRoutes);
 app.use('/api/estadisticas', estadisticasRoutes);
 app.use('/api/reportes', reportesRoutes);
-app.use('/api/notificaciones', notificacionesRoutes);
+app.use('/api/notificaciones', protectedLimiter, notificacionesRoutes);
 
 // Middleware de manejo de errores (debe ir al final, después de todas las rutas)
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');

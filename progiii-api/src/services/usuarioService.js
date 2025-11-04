@@ -155,6 +155,40 @@ class UsuarioService {
   }
 
   /**
+   * Eliminar definitivamente (hard delete) un usuario
+   * Solo funciona para usuarios ya desactivados (soft delete)
+   * @param {number} id - ID del usuario
+   * @param {number} currentUserId - ID del usuario actual (para validaciones)
+   * @returns {Promise<boolean>} true si se eliminó
+   * @throws {Error} Si el usuario no existe, está activo, o se intenta eliminar a sí mismo
+   */
+  async permanentDeleteUsuario(id, currentUserId = null) {
+    // Prevenir que un usuario se elimine a sí mismo
+    if (currentUserId && currentUserId === id) {
+      throw new Error('No puedes eliminar tu propio usuario.');
+    }
+    
+    // Verificar que el usuario existe
+    const usuario = await usuarioRepository.findById(id, true);
+    if (!usuario) {
+      throw new Error('Usuario no encontrado');
+    }
+    
+    // Verificar que el usuario está desactivado
+    if (usuario.activo === 1) {
+      throw new Error('No se puede eliminar definitivamente un usuario activo. Primero debe ser desactivado.');
+    }
+    
+    const deleted = await usuarioRepository.permanentDelete(id);
+    
+    if (!deleted) {
+      throw new Error('Usuario no encontrado para eliminar definitivamente');
+    }
+    
+    return true;
+  }
+
+  /**
    * Verificar contraseña
    * @param {string} plainPassword - Contraseña en texto plano
    * @param {string} hashedPassword - Contraseña hasheada

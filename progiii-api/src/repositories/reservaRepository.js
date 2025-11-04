@@ -438,6 +438,39 @@ class ReservaRepository {
     
     return result.affectedRows > 0;
   }
+
+  /**
+   * Eliminar definitivamente (hard delete) una reserva
+   * Solo debe usarse cuando la reserva ya está desactivada (soft delete)
+   * @param {number} id - ID de la reserva
+   * @returns {Promise<boolean>} true si se eliminó, false si no existe
+   */
+  async permanentDelete(id) {
+    // Verificar que la reserva existe y está desactivada
+    const [checkResult] = await db.query(
+      'SELECT activo FROM reservas WHERE reserva_id = ?',
+      [id]
+    );
+    
+    if (checkResult.length === 0) {
+      return false;
+    }
+    
+    if (checkResult[0].activo === 1) {
+      throw new Error('No se puede eliminar definitivamente una reserva activa. Primero debe ser desactivada.');
+    }
+    
+    // Eliminar servicios asociados primero (cascada manual)
+    await db.query('DELETE FROM reservas_servicios WHERE reserva_id = ?', [id]);
+    
+    // Realizar eliminación física
+    const [result] = await db.query(
+      'DELETE FROM reservas WHERE reserva_id = ?',
+      [id]
+    );
+    
+    return result.affectedRows > 0;
+  }
 }
 
 module.exports = new ReservaRepository();

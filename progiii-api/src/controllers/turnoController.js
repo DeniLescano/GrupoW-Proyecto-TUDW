@@ -149,6 +149,34 @@ class TurnoController {
       res.status(statusCode).json(response);
     }
   }
+
+  /**
+   * Eliminar definitivamente (hard delete) un turno
+   * DELETE /api/v1/turnos/:id/permanent
+   */
+  async permanentDelete(req, res) {
+    try {
+      const { id } = req.params;
+      
+      await turnoService.permanentDeleteTurno(id);
+      
+      res.json(successResponse(null, 'Turno eliminado definitivamente'));
+    } catch (error) {
+      if (error.message === 'Turno no encontrado' || error.message.includes('no encontrado')) {
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
+      }
+      
+      if (error.message.includes('activo')) {
+        const { response, statusCode } = errorResponse(error.message, null, 403);
+        return res.status(statusCode).json(response);
+      }
+      
+      console.error('Error al eliminar definitivamente turno:', error);
+      const { response, statusCode } = errorResponse('Error al eliminar definitivamente el turno', error.message, 500);
+      res.status(statusCode).json(response);
+    }
+  }
 }
 
 module.exports = new TurnoController();

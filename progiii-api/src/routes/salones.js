@@ -151,4 +151,29 @@ router.put('/:id', invalidateCacheAfterWrite('salones'), authenticateToken, auth
  */
 router.delete('/:id', invalidateCacheAfterWrite('salones'), authenticateToken, authorizeRoles('empleado', 'administrador'), deleteSalonValidator, handleValidationErrors, salonController.delete);
 
+/**
+ * @swagger
+ * /salones/{id}/permanent:
+ *   delete:
+ *     summary: Eliminar definitivamente (hard delete) un salón
+ *     tags: [Salones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del salón
+ *     responses:
+ *       200:
+ *         description: Salón eliminado definitivamente
+ *       403:
+ *         description: No se puede eliminar un salón activo
+ *       404:
+ *         description: Salón no encontrado
+ */
+router.delete('/:id/permanent', invalidateCacheAfterWrite('salones'), authenticateToken, authorizeRoles('administrador'), deleteSalonValidator, handleValidationErrors, salonController.permanentDelete);
+
 module.exports = router;

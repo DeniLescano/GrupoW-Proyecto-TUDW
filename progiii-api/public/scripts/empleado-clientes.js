@@ -17,7 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error('Error al cargar los clientes');
             }
-            const usuarios = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            const usuarios = (data.success && data.data) ? data.data : data;
             // Filtrar solo clientes (tipo_usuario = 1)
             allClientes = usuarios.filter(u => u.tipo_usuario === 1);
             renderClientes(allClientes);

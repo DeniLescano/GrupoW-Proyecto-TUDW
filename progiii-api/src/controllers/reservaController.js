@@ -245,6 +245,34 @@ class ReservaController {
       res.status(statusCode).json(response);
     }
   }
+
+  /**
+   * Eliminar definitivamente (hard delete) una reserva
+   * DELETE /api/v1/reservas/:id/permanent
+   */
+  async permanentDelete(req, res) {
+    try {
+      const { id } = req.params;
+      
+      await reservaService.permanentDeleteReserva(id);
+      
+      res.json(successResponse(null, 'Reserva eliminada definitivamente'));
+    } catch (error) {
+      if (error.message === 'Reserva no encontrada' || error.message.includes('no encontrada')) {
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
+      }
+      
+      if (error.message.includes('activa')) {
+        const { response, statusCode } = errorResponse(error.message, null, 403);
+        return res.status(statusCode).json(response);
+      }
+      
+      console.error('Error al eliminar definitivamente reserva:', error);
+      const { response, statusCode } = errorResponse('Error al eliminar definitivamente la reserva', error.message, 500);
+      res.status(statusCode).json(response);
+    }
+  }
 }
 
 module.exports = new ReservaController();

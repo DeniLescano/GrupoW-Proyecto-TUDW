@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const API_URL = '/servicios';
-    const serviciosBody = document.getElementById('servicios-body');
+    const activosBody = document.getElementById('servicios-activos-body');
+    const inactivosBody = document.getElementById('servicios-inactivos-body');
     const filterInput = document.getElementById('filter-input');
     const noResults = document.getElementById('no-results');
     
@@ -42,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('view-id').textContent = servicio.servicio_id;
         document.getElementById('view-descripcion').textContent = servicio.descripcion;
         document.getElementById('view-importe').textContent = formatCurrency(servicio.importe);
-        document.getElementById('view-estado').textContent = (servicio.activo === 1 || servicio.activo === true) ? 'Activo' : 'Inactivo';
+        document.getElementById('view-estado').textContent = (servicio.activo === 1 || servicio.activo === true) ? '✅ Activado' : '❌ Desactivado';
         document.getElementById('view-creado').textContent = formatDate(servicio.creado);
         
         document.getElementById('edit-id').value = servicio.servicio_id;
@@ -51,26 +52,52 @@ document.addEventListener('DOMContentLoaded', () => {
         
         deleteServicioBtn.dataset.id = servicio.servicio_id;
         
+        // Si el servicio está desactivado, mostrar "Reactivar", si no "Desactivar"
+        if (servicio.activo === 0 || servicio.activo === false) {
+            deleteServicioBtn.textContent = 'Reactivar Servicio';
+            deleteServicioBtn.className = 'activate-btn';
+        } else {
+            deleteServicioBtn.textContent = 'Desactivar Servicio';
+            deleteServicioBtn.className = 'delete-btn';
+        }
+        
+        // Mostrar/ocultar botón de eliminación definitiva solo para servicios desactivados
+        const permanentDeleteBtn = document.getElementById('permanent-delete-servicio-btn');
+        if (permanentDeleteBtn) {
+            if (servicio.activo === 0 || servicio.activo === false) {
+                permanentDeleteBtn.style.display = 'block';
+                permanentDeleteBtn.dataset.id = servicio.servicio_id;
+            } else {
+                permanentDeleteBtn.style.display = 'none';
+            }
+        }
+        
         showViewMode();
         detailsModal.style.display = 'flex';
     }
 
     async function fetchServicios() {
         try {
-            const response = await fetch('http://localhost:3007/api/servicios');
+            // Incluir servicios inactivos (soft delete) usando ?all=true
+            const response = await fetch('http://localhost:3007/api/servicios?all=true');
             if (!response.ok) {
                 throw new Error('Error al cargar los servicios');
             }
-            allServicios = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            allServicios = (data.success && data.data) ? data.data : data;
             renderServicios(allServicios);
         } catch (error) {
             console.error('Error al cargar servicios:', error);
-            serviciosBody.innerHTML = `<tr><td colspan="6" style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</td></tr>`;
+            const errorMessageRow = `<tr><td colspan="6" style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</td></tr>`;
+            activosBody.innerHTML = errorMessageRow;
+            inactivosBody.innerHTML = errorMessageRow;
         }
     }
 
     function renderServicios(serviciosToRender) {
-        serviciosBody.innerHTML = '';
+        activosBody.innerHTML = '';
+        inactivosBody.innerHTML = '';
         
         if (serviciosToRender.length === 0) {
             noResults.style.display = 'block';
@@ -79,28 +106,34 @@ document.addEventListener('DOMContentLoaded', () => {
         
         noResults.style.display = 'none';
 
-        serviciosToRender.forEach(servicio => {
-            const row = serviciosBody.insertRow();
-            
-            if (servicio.activo === 0 || servicio.activo === false) {
-                row.classList.add('user-inactive-row');
-            }
+        const serviciosActivos = serviciosToRender.filter(s => s.activo === 1 || s.activo === true || s.activo === '1');
+        const serviciosInactivos = serviciosToRender.filter(s => s.activo === 0 || s.activo === false || s.activo === '0' || s.activo === null);
 
-            row.insertCell().textContent = servicio.servicio_id;
-            row.insertCell().textContent = servicio.descripcion;
-            row.insertCell().textContent = formatCurrency(servicio.importe);
-            row.insertCell().textContent = (servicio.activo === 1 || servicio.activo === true) ? 'Activo' : 'Inactivo';
-            row.insertCell().textContent = formatDate(servicio.creado);
+        serviciosActivos.forEach(servicio => createRow(servicio, activosBody));
+        serviciosInactivos.forEach(servicio => createRow(servicio, inactivosBody));
+    }
 
-            const actionsCell = row.insertCell();
-            actionsCell.className = 'table-actions';
-            
-            const viewButton = document.createElement('button');
-            viewButton.textContent = 'Ver / Editar';
-            viewButton.className = 'edit-btn';
-            viewButton.addEventListener('click', () => openDetailsModal(servicio));
-            actionsCell.appendChild(viewButton);
-        });
+    function createRow(servicio, tbody) {
+        const row = tbody.insertRow();
+        
+        if (servicio.activo === 0 || servicio.activo === false) {
+            row.classList.add('user-inactive-row');
+        }
+
+        row.insertCell().textContent = servicio.servicio_id;
+        row.insertCell().textContent = servicio.descripcion;
+        row.insertCell().textContent = formatCurrency(servicio.importe);
+        row.insertCell().textContent = (servicio.activo === 1 || servicio.activo === true) ? 'Activo' : 'Inactivo';
+        row.insertCell().textContent = formatDate(servicio.creado);
+
+        const actionsCell = row.insertCell();
+        actionsCell.className = 'table-actions';
+        
+        const viewButton = document.createElement('button');
+        viewButton.textContent = 'Ver / Editar';
+        viewButton.className = 'edit-btn';
+        viewButton.addEventListener('click', () => openDetailsModal(servicio));
+        actionsCell.appendChild(viewButton);
     }
 
     openAddModalBtn.addEventListener('click', () => {
@@ -220,30 +253,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
     deleteServicioBtn.addEventListener('click', async () => {
         const id = deleteServicioBtn.dataset.id;
+        const servicio = allServicios.find(s => s.servicio_id == id);
+        const isInactive = servicio && (servicio.activo === 0 || servicio.activo === false);
+        const action = isInactive ? 'reactivar' : 'desactivar';
         
-        if (!confirm(`¿Estás seguro de que quieres eliminar (desactivar) el servicio ID ${id}?`)) {
+        if (!confirm(`¿Estás seguro de que quieres ${action} el servicio ID ${id}?`)) {
             return;
         }
 
         try {
-            const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
-                method: 'DELETE',
-            });
+            if (isInactive) {
+                // Reactivar: actualizar activo = 1
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        descripcion: servicio.descripcion,
+                        importe: servicio.importe,
+                        activo: 1
+                    }),
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Error al eliminar el servicio');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al reactivar el servicio');
+                }
+
+                alert('Servicio reactivado correctamente!');
+            } else {
+                // Desactivar: soft delete
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al desactivar el servicio');
+                }
+
+                alert('Servicio desactivado correctamente!');
             }
 
-            alert('Servicio eliminado correctamente (Soft Delete)!');
-            detailsModal.style.display = 'none';
-            fetchServicios();
+            detailsModal.style.display = 'none'; 
+            fetchServicios(); 
 
         } catch (error) {
-            alert(`Error al eliminar: ${error.message}`);
-            console.error('Error al eliminar servicio:', error);
+            alert(`Error: ${error.message}`);
+            console.error(`Error al ${action} servicio:`, error);
         }
     });
+
+    // Event listener para eliminación definitiva
+    const permanentDeleteBtn = document.getElementById('permanent-delete-servicio-btn');
+    if (permanentDeleteBtn) {
+        permanentDeleteBtn.addEventListener('click', async () => {
+            const id = permanentDeleteBtn.dataset.id;
+            
+            // Confirmación con advertencia
+            const confirmMessage = `⚠️ ADVERTENCIA: Esta acción NO se puede deshacer.\n\n` +
+                `Estás a punto de eliminar definitivamente el servicio ID ${id}.\n\n` +
+                `Esta acción eliminará permanentemente el servicio de la base de datos.\n\n` +
+                `¿Estás completamente seguro de que deseas continuar?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Segunda confirmación
+            if (!confirm('Esta es tu última oportunidad. ¿Proceder con la eliminación definitiva?')) {
+                return;
+            }
+            
+            try {
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}/permanent`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al eliminar definitivamente el servicio');
+                }
+                
+                alert('Servicio eliminado definitivamente.');
+                detailsModal.style.display = 'none';
+                fetchServicios();
+            } catch (error) {
+                alert(`Error al eliminar definitivamente: ${error.message}`);
+                console.error('Error al eliminar definitivamente servicio:', error);
+            }
+        });
+    }
 
     window.filterServicios = function() {
         const filterText = filterInput.value.toLowerCase();

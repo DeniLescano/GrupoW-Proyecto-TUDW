@@ -89,11 +89,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else {
             deleteUserBtn.disabled = false;
-            deleteUserBtn.textContent = user.activo === 1 ? 'Desactivar Usuario' : 'Activar Usuario';
+            // Si el usuario está desactivado, mostrar "Reactivar", si no "Desactivar"
+            if (user.activo === 0 || user.activo === false) {
+                deleteUserBtn.textContent = 'Reactivar Usuario';
+                deleteUserBtn.className = 'activate-btn';
+            } else {
+                deleteUserBtn.textContent = 'Desactivar Usuario';
+                deleteUserBtn.className = 'delete-btn';
+            }
             deleteUserBtn.style.opacity = '1';
             deleteUserBtn.style.cursor = 'pointer';
             if (selfDeactivateWarning) {
                 selfDeactivateWarning.style.display = 'none';
+            }
+        }
+        
+        // Mostrar/ocultar botón de eliminación definitiva solo para usuarios desactivados
+        const permanentDeleteBtn = document.getElementById('permanent-delete-user-btn');
+        if (permanentDeleteBtn) {
+            if (user.activo === 0 || user.activo === false) {
+                permanentDeleteBtn.style.display = 'block';
+                permanentDeleteBtn.dataset.id = user.usuario_id;
+            } else {
+                permanentDeleteBtn.style.display = 'none';
             }
         }
 
@@ -188,11 +206,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchUsuarios() {
         try {
-            const response = await window.auth.fetchWithAuth(API_URL);
+            // Incluir usuarios inactivos (soft delete) usando ?all=true
+            const response = await window.auth.fetchWithAuth(`${API_URL}?all=true`);
             if (!response.ok) {
                 throw new Error('Error al cargar los usuarios');
             }
-            allUsuarios = await response.json(); 
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            allUsuarios = (data.success && data.data) ? data.data : data;
             renderUsuarios(allUsuarios);
 
         } catch (error) {
@@ -420,6 +441,46 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleUserActivation(id, estadoActual);
     });
 
+    // Event listener para eliminación definitiva
+    const permanentDeleteBtn = document.getElementById('permanent-delete-user-btn');
+    if (permanentDeleteBtn) {
+        permanentDeleteBtn.addEventListener('click', async () => {
+            const id = permanentDeleteBtn.dataset.id;
+            
+            // Confirmación con advertencia
+            const confirmMessage = `⚠️ ADVERTENCIA: Esta acción NO se puede deshacer.\n\n` +
+                `Estás a punto de eliminar definitivamente el usuario ID ${id}.\n\n` +
+                `Esta acción eliminará permanentemente el usuario de la base de datos.\n\n` +
+                `¿Estás completamente seguro de que deseas continuar?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Segunda confirmación
+            if (!confirm('Esta es tu última oportunidad. ¿Proceder con la eliminación definitiva?')) {
+                return;
+            }
+            
+            try {
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}/permanent`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al eliminar definitivamente el usuario');
+                }
+                
+                alert('Usuario eliminado definitivamente.');
+                detailsUserModal.style.display = 'none';
+                fetchUsuarios();
+            } catch (error) {
+                alert(`Error al eliminar definitivamente: ${error.message}`);
+                console.error('Error al eliminar definitivamente usuario:', error);
+            }
+        });
+    }
 
     fetchUsuarios();
 });

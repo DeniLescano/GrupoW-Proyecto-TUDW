@@ -25,7 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('http://localhost:3007/api/salones');
             if (!response.ok) throw new Error('Error al cargar salones');
-            salones = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            salones = (data.success && data.data) ? data.data : data;
             
             salonSelect.innerHTML = '<option value="">Seleccione un salón</option>';
             salones.forEach(salon => {
@@ -45,7 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('http://localhost:3007/api/turnos');
             if (!response.ok) throw new Error('Error al cargar turnos');
-            turnos = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            turnos = (data.success && data.data) ? data.data : data;
             
             turnoSelect.innerHTML = '<option value="">Seleccione un turno</option>';
             turnos.forEach(turno => {
@@ -64,7 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('http://localhost:3007/api/servicios');
             if (!response.ok) throw new Error('Error al cargar servicios');
-            servicios = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            servicios = (data.success && data.data) ? data.data : data;
             
             serviciosContainer.innerHTML = '';
             servicios.forEach(servicio => {

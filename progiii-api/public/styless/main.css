@@ -276,37 +276,73 @@ h1 {
 
 
 button {
-    padding: 10px 18px;
+    padding: 12px 24px;
     border: none;
-    border-radius: var(--border-radius);
+    border-radius: 12px;
     cursor: pointer;
     font-weight: 600;
-    transition: background-color 0.2s, transform 0.1s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-transform: uppercase;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+button:hover::before {
+    width: 300px;
+    height: 300px;
 }
 
 button:active {
-    transform: scale(0.98);
+    transform: scale(0.96);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .add-btn {
-    background-color: var(--secondary-color);
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
 }
-.add-btn:hover { background-color: #218838; }
+.add-btn:hover { 
+    background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+}
 
 .edit-btn {
-    background-color: var(--warning-color);
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
     color: var(--dark-text);
 }
-.edit-btn:hover { background-color: #e0a800; }
+.edit-btn:hover { 
+    background: linear-gradient(135deg, #e0a800 0%, #f57c00 100%);
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
+}
 
 .delete-btn {
-    background-color: var(--danger-color);
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
     color: white;
 }
-.delete-btn:hover { background-color: #c82333; }
+.delete-btn:hover { 
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.3);
+}
 
 .view-btn {
     background-color: var(--primary-color);
@@ -323,11 +359,34 @@ button:active {
 
 /* Nuevo estilo para el botón de activación */
 .activate-btn { 
-    background-color: var(--secondary-color); /* Verde */
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
 }
 .activate-btn:hover { 
-    background-color: #218838; 
+    background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+}
+
+.danger-btn {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.danger-btn::after {
+    content: '⚠️';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    animation: pulse 2s infinite;
+}
+
+.danger-btn:hover {
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+    animation: pulse 0.5s;
 }
 
 
@@ -339,21 +398,52 @@ button:active {
 }
 
 .salon-card {
-    background-color: #ffffff;
-    border-radius: 10px;
-    box-shadow: var(--card-shadow);
-    padding: 25px;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
+    padding: 28px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 250px; 
-    border-left: 5px solid var(--primary-color); 
+    border-left: 5px solid transparent;
+    border-image: linear-gradient(180deg, #667eea 0%, #764ba2 100%) 1;
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.salon-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+    transition: left 0.6s;
+}
+
+.salon-card:hover::before {
+    left: 100%;
 }
 
 .salon-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2), 0 0 20px rgba(118, 75, 162, 0.1);
+    border-left-width: 8px;
+}
+
+.salon-inactive {
+    opacity: 0.6;
+    filter: grayscale(0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(252, 235, 235, 0.9) 100%);
+}
+
+.salon-inactive:hover {
+    opacity: 0.8;
+    filter: grayscale(0.1);
 }
 
 .card-title {
@@ -378,27 +468,36 @@ button:active {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: none; 
     justify-content: center;
     align-items: center;
     z-index: 1000;
     padding: 20px;
+    animation: fadeInBackdrop 0.3s ease-out;
+}
+
+.modal.show {
+    display: flex;
 }
 
 .modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 35px;
+    border-radius: 20px;
     width: 100%;
-    max-width: 500px;
+    max-width: 550px;
     max-height: 90vh;
     overflow-y: auto;
     overflow-x: hidden;
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
-    animation: fadeIn 0.3s ease-out;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 123, 255, 0.1);
+    animation: slideInUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     flex-direction: column;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .modal-content::-webkit-scrollbar {
@@ -419,9 +518,41 @@ button:active {
     background: #555;
 }
 
+@keyframes fadeInBackdrop {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(30px) scale(0.95);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1);
+    }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-20px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0; 
+        transform: translateX(-20px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0);
+    }
 }
 
 .close-button {
@@ -500,31 +631,61 @@ button:active {
 .usuarios-table { 
     width: 100%;
     min-width: 800px; 
-    border-collapse: collapse; 
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-collapse: separate;
+    border-spacing: 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
     background-color: #fff;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .usuarios-table th {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 12px 15px;
+    padding: 16px 20px;
     text-align: left;
     font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    position: relative;
+}
+
+.usuarios-table th:first-child {
+    border-top-left-radius: 12px;
+}
+
+.usuarios-table th:last-child {
+    border-top-right-radius: 12px;
 }
 
 .usuarios-table td {
-    padding: 10px 15px;
-    border-bottom: 1px solid #ddd;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     vertical-align: middle;
+    transition: all 0.2s ease;
 }
 
 .usuarios-table tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: rgba(248, 249, 250, 0.5);
 }
 
+.usuarios-table tbody tr {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideIn 0.4s ease-out;
+    animation-fill-mode: both;
+}
+
+.usuarios-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.usuarios-table tbody tr:nth-child(2) { animation-delay: 0.1s; }
+.usuarios-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+.usuarios-table tbody tr:nth-child(4) { animation-delay: 0.2s; }
+.usuarios-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
+
 .usuarios-table tbody tr:hover {
-    background-color: #f1f1f1;
+    background-color: rgba(102, 126, 234, 0.08) !important;
+    transform: translateX(4px);
+    box-shadow: -4px 0 12px rgba(102, 126, 234, 0.15);
 }
 
 .usuarios-table .table-actions button {
@@ -536,8 +697,27 @@ button:active {
 }
 
 .user-inactive-row {
-    background-color: #fcebeb !important;
-    color: #999;
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.08) 0%, rgba(220, 53, 69, 0.03) 100%) !important;
+    color: #999 !important;
+    opacity: 0.65;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.user-inactive-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #dc3545 0%, #c82333 100%);
+}
+
+.user-inactive-row:hover {
+    opacity: 0.85;
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.12) 0%, rgba(220, 53, 69, 0.05) 100%) !important;
+    transform: translateX(2px);
 }
 
 .current-user-row {

@@ -145,6 +145,34 @@ class ServicioController {
       res.status(statusCode).json(response);
     }
   }
+
+  /**
+   * Eliminar definitivamente (hard delete) un servicio
+   * DELETE /api/v1/servicios/:id/permanent
+   */
+  async permanentDelete(req, res) {
+    try {
+      const { id } = req.params;
+      
+      await servicioService.permanentDeleteServicio(id);
+      
+      res.json(successResponse(null, 'Servicio eliminado definitivamente'));
+    } catch (error) {
+      if (error.message === 'Servicio no encontrado' || error.message.includes('no encontrado')) {
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
+      }
+      
+      if (error.message.includes('activo')) {
+        const { response, statusCode } = errorResponse(error.message, null, 403);
+        return res.status(statusCode).json(response);
+      }
+      
+      console.error('Error al eliminar definitivamente servicio:', error);
+      const { response, statusCode } = errorResponse('Error al eliminar definitivamente el servicio', error.message, 500);
+      res.status(statusCode).json(response);
+    }
+  }
 }
 
 module.exports = new ServicioController();

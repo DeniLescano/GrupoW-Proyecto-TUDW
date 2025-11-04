@@ -33,6 +33,7 @@
     </header>
 
     <div class="table-container">
+        <h2>Reservas Activas</h2>
         <table class="usuarios-table">
             <thead>
                 <tr>
@@ -48,7 +49,29 @@
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="reservas-body">
+            <tbody id="reservas-activas-body">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-container" style="margin-top: 40px;">
+        <h2 style="color: var(--danger-color, #dc3545);">Reservas Desactivadas</h2>
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Salón</th>
+                    <th>Turno</th>
+                    <th>Temática</th>
+                    <th>Importe Total</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="reservas-inactivas-body">
             </tbody>
         </table>
     </div>
@@ -180,7 +203,8 @@
                 
                 <div class="action-buttons-view">
                     <button id="open-edit-btn" class="edit-btn">Modificar Reserva</button>
-                    <button id="delete-reserva-btn" class="delete-btn">Cancelar Reserva</button>
+                    <button id="delete-reserva-btn" class="delete-btn">Desactivar Reserva</button>
+                    <button id="permanent-delete-reserva-btn" class="danger-btn" style="display: none; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">⚠️ Eliminar Definitivamente</button>
                 </div>
             </div>
         </div>

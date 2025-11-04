@@ -38,7 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error('Error al cargar las reservas');
             }
-            allReservas = await response.json();
+            const data = await response.json();
+            // Manejar respuesta estandarizada { success: true, data: [...] }
+            allReservas = (data.success && data.data) ? data.data : data;
             renderReservas(allReservas);
         } catch (error) {
             console.error('Error al cargar reservas:', error);

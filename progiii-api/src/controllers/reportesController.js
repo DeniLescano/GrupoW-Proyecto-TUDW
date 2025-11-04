@@ -1,4 +1,4 @@
-const estadisticasService = require('../services/estadisticasService');
+const reporteService = require('../services/reporteService');
 const { successResponse, errorResponse } = require('../utils/responseFormatter');
 
 /**
@@ -7,22 +7,80 @@ const { successResponse, errorResponse } = require('../utils/responseFormatter')
  */
 class ReportesController {
   /**
-   * Obtener reporte de reservas para PDF/CSV
-   * GET /api/v1/reportes/reservas?fecha_desde=YYYY-MM-DD&fecha_hasta=YYYY-MM-DD
+   * Obtener reporte de reservas en formato JSON, PDF o CSV
+   * GET /api/v1/reportes/reservas?fecha_desde=YYYY-MM-DD&fecha_hasta=YYYY-MM-DD&formato=PDF|CSV|JSON
+   * 
+   * Validación y Autorización:
+   * - Solo rol 'Administrador' puede acceder (validado en ruta)
+   * - Valida parámetro formato (PDF, CSV o JSON)
+   * - Valida formato de fechas (YYYY-MM-DD)
+   * 
+   * Manejo de Datos Complejos:
+   * - Obtiene datos de reservas con JOINs a servicios, salones, turnos, usuarios/clientes
+   * - Usa stored procedure que realiza las relaciones en la base de datos
+   * 
+   * Mecanismo de Descarga:
+   * - Para CSV: establece Content-Type y Content-Disposition: attachment
+   * - Para PDF: establece Content-Type y Content-Disposition: attachment (si se implementa)
+   * - Para JSON: retorna JSON estándar
    */
   async reporteReservas(req, res) {
     try {
-      const { fecha_desde, fecha_hasta } = req.query;
+      const { fecha_desde, fecha_hasta, formato = 'JSON' } = req.query;
       
-      const reservas = await estadisticasService.getReservasDetalladas(
+      // Validar parámetro formato
+      const formatosPermitidos = ['PDF', 'CSV', 'JSON'];
+      const formatoUpper = formato.toUpperCase();
+      
+      if (!formatosPermitidos.includes(formatoUpper)) {
+        const { response, statusCode } = errorResponse(
+          `Formato inválido. Formatos permitidos: ${formatosPermitidos.join(', ')}`,
+          null,
+          400
+        );
+        return res.status(statusCode).json(response);
+      }
+      
+      // Obtener reservas detalladas (con datos relacionados mediante JOINs en stored procedure)
+      const reservas = await reporteService.getReservasDetalladas(
         fecha_desde || null,
         fecha_hasta || null
       );
       
+      // Manejar según formato solicitado
+      if (formatoUpper === 'CSV') {
+        // Generar CSV usando servicio
+        const csv = reporteService.generarCSV(reservas);
+        
+        // Configurar headers para descarga de archivo
+        const filename = `reporte_reservas_${new Date().toISOString().split('T')[0]}.csv`;
+        res.setHeader('Content-Type', 'text/csv;charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        
+        // Enviar archivo CSV
+        res.send(csv);
+        return;
+      }
+      
+      // Para PDF: retornar JSON (la generación de PDF se hace en frontend)
+      // Si se quisiera implementar PDF en backend, aquí se usaría una librería como pdfkit
+      if (formatoUpper === 'PDF') {
+        // Por ahora retornamos JSON, el frontend genera el PDF
+        // Si se implementa en backend, se usaría:
+        // const pdf = await reporteService.generarPDF(reservas);
+        // res.setHeader('Content-Type', 'application/pdf');
+        // res.setHeader('Content-Disposition', `attachment; filename="reporte_reservas_${new Date().toISOString().split('T')[0]}.pdf"`);
+        // res.send(pdf);
+        res.json(successResponse(reservas, 'Datos para generación de PDF'));
+        return;
+      }
+      
+      // Formato JSON (por defecto)
       res.json(successResponse(reservas));
     } catch (error) {
       if (error.message.includes('formato') || 
-          error.message.includes('anterior')) {
+          error.message.includes('anterior') ||
+          error.message.includes('Formato inválido')) {
         const { response, statusCode } = errorResponse(error.message, null, 400);
         return res.status(statusCode).json(response);
       }
@@ -34,32 +92,30 @@ class ReportesController {
   }
 
   /**
-   * Exportar reservas a CSV
+   * Exportar reservas a CSV (endpoint específico para compatibilidad)
    * GET /api/v1/reportes/reservas/csv?fecha_desde=YYYY-MM-DD&fecha_hasta=YYYY-MM-DD
+   * 
+   * Este endpoint es un alias para GET /api/v1/reportes/reservas?formato=CSV
    */
   async exportarReservasCSV(req, res) {
     try {
       const { fecha_desde, fecha_hasta } = req.query;
       
-      const reservas = await estadisticasService.getReservasDetalladas(
+      // Obtener reservas detalladas (con datos relacionados mediante JOINs)
+      const reservas = await reporteService.getReservasDetalladas(
         fecha_desde || null,
         fecha_hasta || null
       );
       
-      // Construir CSV
-      let csv = 'ID Reserva,Fecha,Cliente,Usuario,Salón,Dirección,Turno,Temática,Importe Salón,Servicios,Importe Total,Estado,Creado\n';
+      // Generar CSV usando servicio
+      const csv = reporteService.generarCSV(reservas);
       
-      reservas.forEach(reserva => {
-        const fecha = reserva.fecha_reserva ? new Date(reserva.fecha_reserva).toLocaleDateString('es-AR') : '';
-        const creado = reserva.creado ? new Date(reserva.creado).toLocaleDateString('es-AR') : '';
-        const cliente = `"${reserva.cliente_nombre || ''} ${reserva.cliente_apellido || ''}"`.trim();
-        const turno = reserva.hora_desde ? `${reserva.hora_desde.substring(0, 5)} - ${reserva.hora_hasta.substring(0, 5)}` : '';
-        
-        csv += `${reserva.reserva_id},"${fecha}",${cliente},"${reserva.nombre_usuario || ''}","${reserva.salon_titulo || ''}","${reserva.salon_direccion || ''}","${turno}","${reserva.tematica || ''}","${reserva.importe_salon || 0}","${reserva.servicios || 'Sin servicios'}","${reserva.importe_total || 0}","${reserva.activo === 1 ? 'Activa' : 'Cancelada'}","${creado}"\n`;
-      });
-      
+      // Configurar headers para descarga de archivo
+      const filename = `reporte_reservas_${new Date().toISOString().split('T')[0]}.csv`;
       res.setHeader('Content-Type', 'text/csv;charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename=reporte_reservas_${new Date().toISOString().split('T')[0]}.csv`);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      
+      // Enviar archivo CSV
       res.send(csv);
     } catch (error) {
       if (error.message.includes('formato') || 

@@ -57,6 +57,26 @@ async function fetchWithAuth(url, options = {}) {
     return response;
 }
 
+// Helper para obtener JSON de respuesta estandarizada
+// Maneja automáticamente la estructura { success: true, data: ... }
+async function fetchJSONWithAuth(url, options = {}) {
+    const response = await fetchWithAuth(url, options);
+    const data = await response.json();
+    
+    // Si la respuesta está en formato estandarizado (successResponse)
+    if (data.success !== undefined) {
+        if (!data.success) {
+            // Si hay un error, lanzar excepción
+            throw new Error(data.error || data.message || 'Error en la petición');
+        }
+        // Retornar solo los datos (data.data)
+        return data.data;
+    }
+    
+    // Si no está en formato estandarizado (compatibilidad con respuestas antiguas)
+    return data;
+}
+
 // Verificar rol del usuario
 function hasRole(...roles) {
     const usuario = getUsuario();
@@ -111,6 +131,7 @@ window.auth = {
     isAuthenticated,
     logout,
     fetchWithAuth,
+    fetchJSONWithAuth,
     hasRole,
     isAdmin,
     isEmpleado,

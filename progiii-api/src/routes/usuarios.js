@@ -128,4 +128,29 @@ router.put('/:id', invalidateCacheAfterWrite('usuarios'), authenticateToken, aut
  */
 router.delete('/:id', invalidateCacheAfterWrite('usuarios'), authenticateToken, authorizeRoles('administrador'), deleteUsuarioValidator, handleValidationErrors, usuarioController.delete);
 
+/**
+ * @swagger
+ * /usuarios/{id}/permanent:
+ *   delete:
+ *     summary: Eliminar definitivamente (hard delete) un usuario
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del usuario
+ *     responses:
+ *       200:
+ *         description: Usuario eliminado definitivamente
+ *       403:
+ *         description: No se puede eliminar un usuario activo o es el usuario actual
+ *       404:
+ *         description: Usuario no encontrado
+ */
+router.delete('/:id/permanent', invalidateCacheAfterWrite('usuarios'), authenticateToken, authorizeRoles('administrador'), deleteUsuarioValidator, handleValidationErrors, usuarioController.permanentDelete);
+
 module.exports = router;

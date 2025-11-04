@@ -191,6 +191,36 @@ class SalonRepository {
   }
 
   /**
+   * Eliminar definitivamente (hard delete) un salón
+   * Solo debe usarse cuando el salón ya está desactivado (soft delete)
+   * @param {number} id - ID del salón
+   * @returns {Promise<boolean>} true si se eliminó, false si no existe
+   */
+  async permanentDelete(id) {
+    // Verificar que el salón existe y está desactivado
+    const [checkResult] = await db.query(
+      'SELECT activo FROM salones WHERE salon_id = ?',
+      [id]
+    );
+    
+    if (checkResult.length === 0) {
+      return false;
+    }
+    
+    if (checkResult[0].activo === 1) {
+      throw new Error('No se puede eliminar definitivamente un salón activo. Primero debe ser desactivado.');
+    }
+    
+    // Realizar eliminación física
+    const [result] = await db.query(
+      'DELETE FROM salones WHERE salon_id = ?',
+      [id]
+    );
+    
+    return result.affectedRows > 0;
+  }
+
+  /**
    * Verificar disponibilidad de salones para una fecha/turno
    * @param {string} fecha - Fecha en formato YYYY-MM-DD
    * @param {number|null} turnoId - ID del turno (opcional)

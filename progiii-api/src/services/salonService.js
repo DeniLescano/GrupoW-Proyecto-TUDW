@@ -103,19 +103,21 @@ class SalonService {
    * @throws {Error} Si el salón no existe o datos inválidos
    */
   async updateSalon(id, salonData) {
-    const { titulo, direccion, capacidad, importe } = salonData;
+    const { titulo, direccion, capacidad, importe, activo } = salonData;
     
-    // Validaciones de negocio
-    if (!titulo || !direccion || !capacidad || !importe) {
-      throw new Error('Todos los campos son requeridos: titulo, direccion, capacidad, importe.');
-    }
-    
-    if (capacidad <= 0) {
-      throw new Error('La capacidad debe ser mayor a 0');
-    }
-    
-    if (importe < 0) {
-      throw new Error('El importe no puede ser negativo');
+    // Validaciones de negocio (solo si no es solo reactivación)
+    if (activo === undefined) {
+      if (!titulo || !direccion || capacidad === undefined || importe === undefined) {
+        throw new Error('Todos los campos son requeridos: titulo, direccion, capacidad, importe.');
+      }
+      
+      if (capacidad <= 0) {
+        throw new Error('La capacidad debe ser mayor a 0');
+      }
+      
+      if (importe < 0) {
+        throw new Error('El importe no puede ser negativo');
+      }
     }
     
     // Verificar que el salón existe
@@ -125,8 +127,13 @@ class SalonService {
       throw new Error('Salón no encontrado');
     }
     
+    // Si solo se está reactivando, usar los datos existentes
+    const updateData = activo !== undefined && titulo === undefined 
+      ? { ...salonExistente, activo } 
+      : salonData;
+    
     // Actualizar salón
-    const updated = await salonRepository.update(id, salonData);
+    const updated = await salonRepository.update(id, updateData);
     
     if (!updated) {
       throw new Error('Salón no encontrado para actualizar');
@@ -147,6 +154,34 @@ class SalonService {
     
     if (!deleted) {
       throw new Error('Salón no encontrado para eliminar');
+    }
+    
+    return true;
+  }
+
+  /**
+   * Eliminar definitivamente (hard delete) un salón
+   * Solo funciona para salones ya desactivados (soft delete)
+   * @param {number} id - ID del salón
+   * @returns {Promise<boolean>} true si se eliminó
+   * @throws {Error} Si el salón no existe, está activo, o tiene reservas activas
+   */
+  async permanentDeleteSalon(id) {
+    // Verificar que el salón existe
+    const salon = await salonRepository.findById(id, true);
+    if (!salon) {
+      throw new Error('Salón no encontrado');
+    }
+    
+    // Verificar que el salón está desactivado
+    if (salon.activo === 1) {
+      throw new Error('No se puede eliminar definitivamente un salón activo. Primero debe ser desactivado.');
+    }
+    
+    const deleted = await salonRepository.permanentDelete(id);
+    
+    if (!deleted) {
+      throw new Error('Salón no encontrado para eliminar definitivamente');
     }
     
     return true;
