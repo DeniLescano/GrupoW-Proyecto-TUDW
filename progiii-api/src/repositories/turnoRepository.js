@@ -138,8 +138,27 @@ class TurnoRepository {
    * @returns {Promise<boolean>} true si se actualizó, false si no existe
    */
   async update(id, turnoData) {
-    const { orden, hora_desde, hora_hasta } = turnoData;
+    const { orden, hora_desde, hora_hasta, activo } = turnoData;
     
+    // Si solo se está actualizando activo, hacer update solo de ese campo
+    if (activo !== undefined && orden === undefined && hora_desde === undefined && hora_hasta === undefined) {
+      const [result] = await db.query(
+        'UPDATE turnos SET activo = ? WHERE turno_id = ?',
+        [activo, id]
+      );
+      return result.affectedRows > 0;
+    }
+    
+    // Si se proporciona activo junto con otros campos, incluir activo en el update
+    if (activo !== undefined) {
+      const [result] = await db.query(
+        'UPDATE turnos SET orden = ?, hora_desde = ?, hora_hasta = ?, activo = ? WHERE turno_id = ?',
+        [orden, hora_desde, hora_hasta, activo, id]
+      );
+      return result.affectedRows > 0;
+    }
+    
+    // Update normal sin activo
     const [result] = await db.query(
       'UPDATE turnos SET orden = ?, hora_desde = ?, hora_hasta = ? WHERE turno_id = ?',
       [orden, hora_desde, hora_hasta, id]

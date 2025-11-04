@@ -127,8 +127,8 @@ class SalonService {
       throw new Error('Salón no encontrado');
     }
     
-    // Si solo se está reactivando, usar los datos existentes
-    const updateData = activo !== undefined && titulo === undefined 
+    // Si solo se está reactivando (solo activo), usar los datos existentes
+    const updateData = activo !== undefined && titulo === undefined && direccion === undefined && capacidad === undefined && importe === undefined
       ? { ...salonExistente, activo } 
       : salonData;
     

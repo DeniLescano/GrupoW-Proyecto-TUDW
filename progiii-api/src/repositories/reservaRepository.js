@@ -378,6 +378,11 @@ class ReservaRepository {
       updateValues.push(reservaData.estado);
     }
     
+    if (reservaData.activo !== undefined) {
+      updateFields.push('activo = ?');
+      updateValues.push(reservaData.activo);
+    }
+    
     if (updateFields.length === 0) {
       return false;
     }

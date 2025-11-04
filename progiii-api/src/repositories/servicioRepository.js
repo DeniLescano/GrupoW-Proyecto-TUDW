@@ -176,8 +176,27 @@ class ServicioRepository {
    * @returns {Promise<boolean>} true si se actualizó, false si no existe
    */
   async update(id, servicioData) {
-    const { descripcion, importe } = servicioData;
+    const { descripcion, importe, activo } = servicioData;
     
+    // Si solo se está actualizando activo, hacer update solo de ese campo
+    if (activo !== undefined && descripcion === undefined && importe === undefined) {
+      const [result] = await db.query(
+        'UPDATE servicios SET activo = ? WHERE servicio_id = ?',
+        [activo, id]
+      );
+      return result.affectedRows > 0;
+    }
+    
+    // Si se proporciona activo junto con otros campos, incluir activo en el update
+    if (activo !== undefined) {
+      const [result] = await db.query(
+        'UPDATE servicios SET descripcion = ?, importe = ?, activo = ? WHERE servicio_id = ?',
+        [descripcion, importe, activo, id]
+      );
+      return result.affectedRows > 0;
+    }
+    
+    // Update normal sin activo
     const [result] = await db.query(
       'UPDATE servicios SET descripcion = ?, importe = ? WHERE servicio_id = ?',
       [descripcion, importe, id]

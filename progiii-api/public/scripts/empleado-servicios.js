@@ -277,12 +277,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             if (isInactive) {
-                // Reactivar: actualizar activo = 1
+                // Reactivar: actualizar solo activo = 1
                 const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
                     method: 'PUT',
                     body: JSON.stringify({
-                        descripcion: servicio.descripcion,
-                        importe: servicio.importe,
                         activo: 1
                     }),
                 });

@@ -236,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         detailsModal.style.display = 'flex';
+        setTimeout(() => detailsModal.classList.add('show'), 10);
     }
 
     function openAddModal() {
@@ -287,18 +288,42 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('form-tematica').value = reserva.tematica || '';
         document.getElementById('form-foto-cumpleaniero').value = reserva.foto_cumpleaniero || '';
 
-        detailsModal.style.display = 'none';
+        detailsModal.classList.remove('show');
+        setTimeout(() => {
+            detailsModal.style.display = 'none';
+        }, 300);
         addModal.style.display = 'flex';
+        setTimeout(() => addModal.classList.add('show'), 10);
     }
 
     openAddModalBtn.addEventListener('click', openAddModal);
-    closeAddModalBtn.addEventListener('click', () => addModal.style.display = 'none');
-    closeDetailsModalBtn.addEventListener('click', () => detailsModal.style.display = 'none');
+    closeAddModalBtn.addEventListener('click', () => {
+        addModal.classList.remove('show');
+        setTimeout(() => {
+            addModal.style.display = 'none';
+        }, 300);
+    });
+    closeDetailsModalBtn.addEventListener('click', () => {
+        detailsModal.classList.remove('show');
+        setTimeout(() => {
+            detailsModal.style.display = 'none';
+        }, 300);
+    });
     openEditBtn.addEventListener('click', () => openEditModal(currentReserva));
 
     window.addEventListener('click', (event) => {
-        if (event.target === addModal) addModal.style.display = 'none';
-        if (event.target === detailsModal) detailsModal.style.display = 'none';
+        if (event.target === addModal) {
+            addModal.classList.remove('show');
+            setTimeout(() => {
+                addModal.style.display = 'none';
+            }, 300);
+        }
+        if (event.target === detailsModal) {
+            detailsModal.classList.remove('show');
+            setTimeout(() => {
+                detailsModal.style.display = 'none';
+            }, 300);
+        }
     });
 
     reservaForm.addEventListener('submit', async (e) => {
@@ -347,7 +372,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             alert(isEditMode ? 'Reserva actualizada correctamente!' : 'Reserva creada correctamente!');
-            addModal.style.display = 'none';
+            addModal.classList.remove('show');
+            setTimeout(() => {
+                addModal.style.display = 'none';
+            }, 300);
             fetchReservas();
         } catch (error) {
             alert(`Error: ${error.message}`);
@@ -402,7 +430,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Reserva desactivada correctamente!');
             }
 
-            detailsModal.style.display = 'none';
+            detailsModal.classList.remove('show');
+            setTimeout(() => {
+                detailsModal.style.display = 'none';
+            }, 300);
             fetchReservas();
         } catch (error) {
             alert(`Error: ${error.message}`);
@@ -442,7 +473,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 alert('Reserva eliminada definitivamente.');
-                detailsModal.style.display = 'none';
+                detailsModal.classList.remove('show');
+                setTimeout(() => {
+                    detailsModal.style.display = 'none';
+                }, 300);
                 fetchReservas();
             } catch (error) {
                 alert(`Error al eliminar definitivamente: ${error.message}`);

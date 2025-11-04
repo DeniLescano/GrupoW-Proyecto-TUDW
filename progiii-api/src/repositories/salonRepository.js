@@ -166,8 +166,27 @@ class SalonRepository {
    * @returns {Promise<boolean>} true si se actualizó, false si no existe
    */
   async update(id, salonData) {
-    const { titulo, direccion, capacidad, importe } = salonData;
+    const { titulo, direccion, capacidad, importe, activo } = salonData;
     
+    // Si solo se está actualizando activo, hacer update solo de ese campo
+    if (activo !== undefined && titulo === undefined && direccion === undefined && capacidad === undefined && importe === undefined) {
+      const [result] = await db.query(
+        'UPDATE salones SET activo = ? WHERE salon_id = ?',
+        [activo, id]
+      );
+      return result.affectedRows > 0;
+    }
+    
+    // Si se proporciona activo junto con otros campos, incluir activo en el update
+    if (activo !== undefined) {
+      const [result] = await db.query(
+        'UPDATE salones SET titulo = ?, direccion = ?, capacidad = ?, importe = ?, activo = ? WHERE salon_id = ?',
+        [titulo, direccion, capacidad, importe, activo, id]
+      );
+      return result.affectedRows > 0;
+    }
+    
+    // Update normal sin activo
     const [result] = await db.query(
       'UPDATE salones SET titulo = ?, direccion = ?, capacidad = ?, importe = ? WHERE salon_id = ?',
       [titulo, direccion, capacidad, importe, id]
