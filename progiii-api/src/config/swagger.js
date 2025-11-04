@@ -15,8 +15,12 @@ const options = {
     },
     servers: [
       {
+        url: `http://localhost:${process.env.PORT || 3007}/api/v1`,
+        description: 'Servidor de desarrollo - API v1'
+      },
+      {
         url: `http://localhost:${process.env.PORT || 3007}/api`,
-        description: 'Servidor de desarrollo'
+        description: 'Servidor de desarrollo - API (deprecated)'
       }
     ],
     components: {
@@ -25,7 +29,7 @@ const options = {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Token JWT obtenido del endpoint /api/auth/login'
+          description: 'Token JWT obtenido del endpoint /api/v1/auth/login'
         }
       },
       schemas: {

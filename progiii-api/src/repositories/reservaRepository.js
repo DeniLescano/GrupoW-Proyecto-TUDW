@@ -46,6 +46,131 @@ class ReservaRepository {
   }
 
   /**
+   * Obtener reservas con paginación, filtrado y ordenación
+   * @param {Object} options - Opciones de consulta
+   * @param {number} options.page - Página actual
+   * @param {number} options.limit - Límite por página
+   * @param {Object} options.filters - Filtros a aplicar
+   * @param {string} options.sortField - Campo por el cual ordenar
+   * @param {string} options.sortOrder - Orden (asc o desc)
+   * @param {boolean} options.includeInactive - Si incluir reservas inactivas
+   * @returns {Promise<Object>} Objeto con reservas y metadata de paginación
+   */
+  async findAllPaginated(options = {}) {
+    const {
+      page = 1,
+      limit = 10,
+      filters = {},
+      sortField = 'fecha_reserva',
+      sortOrder = 'desc',
+      includeInactive = false
+    } = options;
+
+    let baseQuery = `
+      SELECT 
+        r.reserva_id,
+        r.fecha_reserva,
+        r.foto_cumpleaniero,
+        r.tematica,
+        r.importe_salon,
+        r.importe_total,
+        r.estado,
+        r.activo,
+        r.creado,
+        r.modificado,
+        s.salon_id,
+        s.titulo as salon_titulo,
+        s.direccion as salon_direccion,
+        u.usuario_id,
+        u.nombre as usuario_nombre,
+        u.apellido as usuario_apellido,
+        u.nombre_usuario,
+        t.turno_id,
+        t.hora_desde,
+        t.hora_hasta,
+        t.orden
+      FROM reservas r
+      INNER JOIN salones s ON r.salon_id = s.salon_id
+      INNER JOIN usuarios u ON r.usuario_id = u.usuario_id
+      INNER JOIN turnos t ON r.turno_id = t.turno_id
+    `;
+    
+    const values = [];
+    const conditions = [];
+    
+    // Construir condiciones WHERE
+    if (!includeInactive) {
+      conditions.push('r.activo = 1');
+    }
+    
+    // Aplicar filtros permitidos
+    const allowedFilterFields = ['estado', 'usuario_id', 'salon_id', 'turno_id', 'fecha_reserva'];
+    Object.keys(filters).forEach(key => {
+      if (allowedFilterFields.includes(key) && filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        if (key === 'fecha_reserva') {
+          conditions.push(`r.${key} = ?`);
+          values.push(filters[key]);
+        } else if (key === 'usuario_id') {
+          conditions.push(`r.${key} = ?`);
+          values.push(filters[key]);
+        } else if (key === 'salon_id') {
+          conditions.push(`r.${key} = ?`);
+          values.push(filters[key]);
+        } else if (key === 'turno_id') {
+          conditions.push(`r.${key} = ?`);
+          values.push(filters[key]);
+        } else {
+          conditions.push(`r.${key} = ?`);
+          values.push(filters[key]);
+        }
+      }
+    });
+    
+    if (conditions.length > 0) {
+      baseQuery += ` WHERE ${conditions.join(' AND ')}`;
+    }
+    
+    // Aplicar ordenación
+    const allowedSortFields = ['reserva_id', 'fecha_reserva', 'estado', 'importe_total', 'creado', 'modificado'];
+    if (allowedSortFields.includes(sortField)) {
+      const order = sortOrder.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+      baseQuery += ` ORDER BY r.${sortField} ${order}`;
+    } else {
+      // Por defecto ordenar por fecha_reserva DESC
+      baseQuery += ' ORDER BY r.fecha_reserva DESC, t.orden ASC';
+    }
+    
+    // Obtener total de registros (usar subquery para contar correctamente con JOINs)
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM reservas r
+      INNER JOIN salones s ON r.salon_id = s.salon_id
+      INNER JOIN usuarios u ON r.usuario_id = u.usuario_id
+      INNER JOIN turnos t ON r.turno_id = t.turno_id
+      ${conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''}
+    `;
+    const [countResult] = await db.query(countQuery, values);
+    const total = countResult[0].total;
+    
+    // Aplicar paginación
+    const offset = (page - 1) * limit;
+    baseQuery += ` LIMIT ? OFFSET ?`;
+    const paginatedValues = [...values, limit, offset];
+    
+    const [reservas] = await db.query(baseQuery, paginatedValues);
+    
+    return {
+      data: reservas,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  /**
    * Obtener reservas de un usuario específico
    * @param {number} usuarioId - ID del usuario
    * @returns {Promise<Array>} Array de reservas

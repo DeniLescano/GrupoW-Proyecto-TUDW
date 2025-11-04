@@ -22,6 +22,79 @@ class UsuarioRepository {
   }
 
   /**
+   * Obtener usuarios con paginación, filtrado y ordenación
+   * @param {Object} options - Opciones de consulta
+   * @param {number} options.page - Página actual
+   * @param {number} options.limit - Límite por página
+   * @param {Object} options.filters - Filtros a aplicar
+   * @param {string} options.sortField - Campo por el cual ordenar
+   * @param {string} options.sortOrder - Orden (asc o desc)
+   * @param {boolean} options.includeInactive - Si incluir usuarios inactivos
+   * @returns {Promise<Object>} Objeto con usuarios y metadata de paginación
+   */
+  async findAllPaginated(options = {}) {
+    const {
+      page = 1,
+      limit = 10,
+      filters = {},
+      sortField = 'usuario_id',
+      sortOrder = 'asc',
+      includeInactive = false
+    } = options;
+
+    let baseQuery = 'SELECT usuario_id, nombre, apellido, nombre_usuario, tipo_usuario, celular, activo, creado, modificado FROM usuarios';
+    const values = [];
+    
+    // Construir condiciones WHERE
+    const conditions = [];
+    if (!includeInactive) {
+      conditions.push('activo = 1');
+    }
+    
+    // Aplicar filtros permitidos
+    const allowedFilterFields = ['tipo_usuario', 'activo', 'nombre_usuario'];
+    Object.keys(filters).forEach(key => {
+      if (allowedFilterFields.includes(key) && filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        conditions.push(`${key} = ?`);
+        values.push(filters[key]);
+      }
+    });
+    
+    if (conditions.length > 0) {
+      baseQuery += ` WHERE ${conditions.join(' AND ')}`;
+    }
+    
+    // Aplicar ordenación
+    const allowedSortFields = ['usuario_id', 'nombre', 'apellido', 'nombre_usuario', 'tipo_usuario', 'creado', 'modificado'];
+    if (allowedSortFields.includes(sortField)) {
+      const order = sortOrder.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+      baseQuery += ` ORDER BY ${sortField} ${order}`;
+    }
+    
+    // Obtener total de registros
+    const countQuery = baseQuery.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
+    const [countResult] = await db.query(countQuery, values);
+    const total = countResult[0].total;
+    
+    // Aplicar paginación
+    const offset = (page - 1) * limit;
+    baseQuery += ` LIMIT ? OFFSET ?`;
+    const paginatedValues = [...values, limit, offset];
+    
+    const [usuarios] = await db.query(baseQuery, paginatedValues);
+    
+    return {
+      data: usuarios,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  /**
    * Obtener un usuario por ID
    * @param {number} id - ID del usuario
    * @param {boolean} includeInactive - Si incluir usuarios inactivos

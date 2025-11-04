@@ -1,4 +1,5 @@
 const notificationService = require('../services/notificationService');
+const { successResponse, errorResponse } = require('../utils/responseFormatter');
 
 /**
  * Controlador para notificaciones
@@ -7,12 +8,13 @@ const notificationService = require('../services/notificationService');
 class NotificacionController {
   /**
    * Obtener notificaciones del usuario actual
-   * GET /api/notificaciones
+   * GET /api/v1/notificaciones
    */
   async browse(req, res) {
     try {
       if (!req.user || !req.user.usuario_id) {
-        return res.status(401).json({ message: 'Usuario no autenticado' });
+        const { response, statusCode } = errorResponse('Usuario no autenticado', null, 401);
+        return res.status(statusCode).json(response);
       }
 
       const userId = req.user.usuario_id || req.user.id;
@@ -20,54 +22,45 @@ class NotificacionController {
       
       const notificaciones = await notificationService.getUserNotifications(userId, limit);
       
-      res.json({
-        success: true,
-        data: notificaciones,
-        total: notificaciones.length
-      });
+      res.json(successResponse(notificaciones, null, { total: notificaciones.length }));
     } catch (error) {
       console.error('Error al obtener notificaciones:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error al obtener notificaciones'
-      });
+      const { response, statusCode } = errorResponse('Error al obtener notificaciones', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Obtener cantidad de notificaciones no leídas
-   * GET /api/notificaciones/unread
+   * GET /api/v1/notificaciones/unread
    */
   async getUnreadCount(req, res) {
     try {
       if (!req.user || !req.user.usuario_id) {
-        return res.status(401).json({ message: 'Usuario no autenticado' });
+        const { response, statusCode } = errorResponse('Usuario no autenticado', null, 401);
+        return res.status(statusCode).json(response);
       }
 
       const userId = req.user.usuario_id || req.user.id;
       const count = await notificationService.getUnreadCount(userId);
       
-      res.json({
-        success: true,
-        count
-      });
+      res.json(successResponse({ count }));
     } catch (error) {
       console.error('Error al obtener contador de notificaciones:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error al obtener contador de notificaciones'
-      });
+      const { response, statusCode } = errorResponse('Error al obtener contador de notificaciones', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Marcar notificación como leída
-   * PATCH /api/notificaciones/:id/read
+   * PATCH /api/v1/notificaciones/:id/read
    */
   async markAsRead(req, res) {
     try {
       if (!req.user || !req.user.usuario_id) {
-        return res.status(401).json({ message: 'Usuario no autenticado' });
+        const { response, statusCode } = errorResponse('Usuario no autenticado', null, 401);
+        return res.status(statusCode).json(response);
       }
 
       const { id } = req.params;
@@ -76,46 +69,37 @@ class NotificacionController {
       const marked = await notificationService.markAsRead(id, userId);
       
       if (!marked) {
-        return res.status(404).json({ message: 'Notificación no encontrada' });
+        const { response, statusCode } = errorResponse('Notificación no encontrada', null, 404);
+        return res.status(statusCode).json(response);
       }
       
-      res.json({
-        success: true,
-        message: 'Notificación marcada como leída'
-      });
+      res.json(successResponse(null, 'Notificación marcada como leída'));
     } catch (error) {
       console.error('Error al marcar notificación como leída:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error al marcar notificación como leída'
-      });
+      const { response, statusCode } = errorResponse('Error al marcar notificación como leída', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Marcar todas las notificaciones como leídas
-   * PATCH /api/notificaciones/read-all
+   * PATCH /api/v1/notificaciones/read-all
    */
   async markAllAsRead(req, res) {
     try {
       if (!req.user || !req.user.usuario_id) {
-        return res.status(401).json({ message: 'Usuario no autenticado' });
+        const { response, statusCode } = errorResponse('Usuario no autenticado', null, 401);
+        return res.status(statusCode).json(response);
       }
 
       const userId = req.user.usuario_id || req.user.id;
       const count = await notificationService.markAllAsRead(userId);
       
-      res.json({
-        success: true,
-        message: 'Todas las notificaciones marcadas como leídas',
-        count
-      });
+      res.json(successResponse({ count }, 'Todas las notificaciones marcadas como leídas'));
     } catch (error) {
       console.error('Error al marcar todas las notificaciones:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error al marcar todas las notificaciones como leídas'
-      });
+      const { response, statusCode } = errorResponse('Error al marcar todas las notificaciones como leídas', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 }

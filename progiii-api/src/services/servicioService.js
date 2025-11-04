@@ -14,6 +14,21 @@ class ServicioService {
   }
 
   /**
+   * Obtener servicios con paginación, filtrado y ordenación
+   * @param {Object} options - Opciones de consulta
+   * @param {number} options.page - Página actual
+   * @param {number} options.limit - Límite por página
+   * @param {Object} options.filters - Filtros a aplicar
+   * @param {string} options.sortField - Campo por el cual ordenar
+   * @param {string} options.sortOrder - Orden (asc o desc)
+   * @param {boolean} options.includeInactive - Si incluir servicios inactivos
+   * @returns {Promise<Object>} Objeto con servicios y metadata de paginación
+   */
+  async getServiciosPaginated(options = {}) {
+    return await servicioRepository.findAllPaginated(options);
+  }
+
+  /**
    * Obtener un servicio por ID
    * @param {number} id - ID del servicio
    * @param {boolean} includeInactive - Si incluir servicios inactivos

@@ -9,6 +9,7 @@ const {
   getServicioValidator,
   deleteServicioValidator
 } = require('../validators/servicioValidator');
+const { listCache, invalidateCacheAfterWrite } = require('../middlewares/cache');
 
 /**
  * @swagger
@@ -20,7 +21,7 @@ const {
  *       200:
  *         description: Lista de servicios
  */
-router.get('/', servicioController.browse);
+router.get('/', listCache, servicioController.browse);
 
 /**
  * @swagger
@@ -41,7 +42,7 @@ router.get('/', servicioController.browse);
  *       404:
  *         description: Servicio no encontrado
  */
-router.get('/:id', getServicioValidator, handleValidationErrors, servicioController.read);
+router.get('/:id', listCache, getServicioValidator, handleValidationErrors, servicioController.read);
 
 /**
  * @swagger
@@ -63,7 +64,7 @@ router.get('/:id', getServicioValidator, handleValidationErrors, servicioControl
  *       400:
  *         description: Error de validación
  */
-router.post('/', authenticateToken, authorizeRoles('empleado', 'administrador'), createServicioValidator, handleValidationErrors, servicioController.add);
+router.post('/', invalidateCacheAfterWrite('servicios'), authenticateToken, authorizeRoles('empleado', 'administrador'), createServicioValidator, handleValidationErrors, servicioController.add);
 
 /**
  * @swagger
@@ -94,7 +95,7 @@ router.post('/', authenticateToken, authorizeRoles('empleado', 'administrador'),
  *       404:
  *         description: Servicio no encontrado
  */
-router.put('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'), updateServicioValidator, handleValidationErrors, servicioController.edit);
+router.put('/:id', invalidateCacheAfterWrite('servicios'), authenticateToken, authorizeRoles('empleado', 'administrador'), updateServicioValidator, handleValidationErrors, servicioController.edit);
 
 /**
  * @swagger
@@ -117,7 +118,7 @@ router.put('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'
  *       404:
  *         description: Servicio no encontrado
  */
-router.delete('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'), deleteServicioValidator, handleValidationErrors, servicioController.delete);
+router.delete('/:id', invalidateCacheAfterWrite('servicios'), authenticateToken, authorizeRoles('empleado', 'administrador'), deleteServicioValidator, handleValidationErrors, servicioController.delete);
 
 module.exports = router;
 

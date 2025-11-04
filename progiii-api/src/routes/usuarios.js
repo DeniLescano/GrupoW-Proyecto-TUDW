@@ -9,6 +9,7 @@ const {
   getUsuarioValidator,
   deleteUsuarioValidator
 } = require('../validators/usuarioValidator');
+const { listCache, invalidateCacheAfterWrite } = require('../middlewares/cache');
 
 /**
  * @swagger
@@ -26,7 +27,7 @@ const {
  *       403:
  *         description: No autorizado
  */
-router.get('/', authenticateToken, authorizeRoles('administrador'), usuarioController.browse);
+router.get('/', listCache, authenticateToken, authorizeRoles('administrador'), usuarioController.browse);
 
 /**
  * @swagger
@@ -49,7 +50,7 @@ router.get('/', authenticateToken, authorizeRoles('administrador'), usuarioContr
  *       404:
  *         description: Usuario no encontrado
  */
-router.get('/:id', authenticateToken, authorizeRoles('administrador', 'empleado'), getUsuarioValidator, handleValidationErrors, usuarioController.read);
+router.get('/:id', listCache, authenticateToken, authorizeRoles('administrador', 'empleado'), getUsuarioValidator, handleValidationErrors, usuarioController.read);
 
 /**
  * @swagger
@@ -71,7 +72,7 @@ router.get('/:id', authenticateToken, authorizeRoles('administrador', 'empleado'
  *       400:
  *         description: Error de validación
  */
-router.post('/', authenticateToken, authorizeRoles('administrador'), createUsuarioValidator, handleValidationErrors, usuarioController.add);
+router.post('/', invalidateCacheAfterWrite('usuarios'), authenticateToken, authorizeRoles('administrador'), createUsuarioValidator, handleValidationErrors, usuarioController.add);
 
 /**
  * @swagger
@@ -102,7 +103,7 @@ router.post('/', authenticateToken, authorizeRoles('administrador'), createUsuar
  *       404:
  *         description: Usuario no encontrado
  */
-router.put('/:id', authenticateToken, authorizeRoles('administrador'), updateUsuarioValidator, handleValidationErrors, usuarioController.edit);
+router.put('/:id', invalidateCacheAfterWrite('usuarios'), authenticateToken, authorizeRoles('administrador'), updateUsuarioValidator, handleValidationErrors, usuarioController.edit);
 
 /**
  * @swagger
@@ -125,6 +126,6 @@ router.put('/:id', authenticateToken, authorizeRoles('administrador'), updateUsu
  *       404:
  *         description: Usuario no encontrado
  */
-router.delete('/:id', authenticateToken, authorizeRoles('administrador'), deleteUsuarioValidator, handleValidationErrors, usuarioController.delete);
+router.delete('/:id', invalidateCacheAfterWrite('usuarios'), authenticateToken, authorizeRoles('administrador'), deleteUsuarioValidator, handleValidationErrors, usuarioController.delete);
 
 module.exports = router;

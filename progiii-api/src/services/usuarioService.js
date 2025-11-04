@@ -16,6 +16,21 @@ class UsuarioService {
   }
 
   /**
+   * Obtener usuarios con paginación, filtrado y ordenación
+   * @param {Object} options - Opciones de consulta
+   * @param {number} options.page - Página actual
+   * @param {number} options.limit - Límite por página
+   * @param {Object} options.filters - Filtros a aplicar
+   * @param {string} options.sortField - Campo por el cual ordenar
+   * @param {string} options.sortOrder - Orden (asc o desc)
+   * @param {boolean} options.includeInactive - Si incluir usuarios inactivos
+   * @returns {Promise<Object>} Objeto con usuarios y metadata de paginación
+   */
+  async getUsuariosPaginated(options = {}) {
+    return await usuarioRepository.findAllPaginated(options);
+  }
+
+  /**
    * Obtener un usuario por ID
    * @param {number} id - ID del usuario
    * @param {boolean} includeInactive - Si incluir usuarios inactivos

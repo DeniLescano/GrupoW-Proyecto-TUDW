@@ -9,6 +9,7 @@ const {
   getReservaValidator,
   deleteReservaValidator
 } = require('../validators/reservaValidator');
+const { listCache, invalidateCacheAfterWrite } = require('../middlewares/cache');
 
 /**
  * @swagger
@@ -22,7 +23,7 @@ const {
  *       200:
  *         description: Lista de reservas del usuario
  */
-router.get('/mis-reservas', authenticateToken, reservaController.browseByUser);
+router.get('/mis-reservas', listCache, authenticateToken, reservaController.browseByUser);
 
 /**
  * @swagger
@@ -36,7 +37,7 @@ router.get('/mis-reservas', authenticateToken, reservaController.browseByUser);
  *       200:
  *         description: Lista de reservas
  */
-router.get('/', authenticateToken, authorizeRoles('empleado', 'administrador'), reservaController.browse);
+router.get('/', listCache, authenticateToken, authorizeRoles('empleado', 'administrador'), reservaController.browse);
 
 /**
  * @swagger
@@ -59,7 +60,7 @@ router.get('/', authenticateToken, authorizeRoles('empleado', 'administrador'), 
  *       404:
  *         description: Reserva no encontrada
  */
-router.get('/:id', authenticateToken, getReservaValidator, handleValidationErrors, reservaController.read);
+router.get('/:id', listCache, authenticateToken, getReservaValidator, handleValidationErrors, reservaController.read);
 
 /**
  * @swagger
@@ -81,7 +82,7 @@ router.get('/:id', authenticateToken, getReservaValidator, handleValidationError
  *       400:
  *         description: Error de validación
  */
-router.post('/', authenticateToken, authorizeRoles('cliente', 'empleado', 'administrador'), createReservaValidator, handleValidationErrors, reservaController.add);
+router.post('/', invalidateCacheAfterWrite('reservas'), authenticateToken, authorizeRoles('cliente', 'empleado', 'administrador'), createReservaValidator, handleValidationErrors, reservaController.add);
 
 /**
  * @swagger
@@ -104,7 +105,7 @@ router.post('/', authenticateToken, authorizeRoles('cliente', 'empleado', 'admin
  *       404:
  *         description: Reserva no encontrada
  */
-router.patch('/:id/confirmar', authenticateToken, authorizeRoles('administrador'), getReservaValidator, handleValidationErrors, reservaController.confirmar);
+router.patch('/:id/confirmar', invalidateCacheAfterWrite('reservas'), authenticateToken, authorizeRoles('administrador'), getReservaValidator, handleValidationErrors, reservaController.confirmar);
 
 /**
  * @swagger
@@ -135,7 +136,7 @@ router.patch('/:id/confirmar', authenticateToken, authorizeRoles('administrador'
  *       404:
  *         description: Reserva no encontrada
  */
-router.put('/:id', authenticateToken, authorizeRoles('administrador'), updateReservaValidator, handleValidationErrors, reservaController.edit);
+router.put('/:id', invalidateCacheAfterWrite('reservas'), authenticateToken, authorizeRoles('administrador'), updateReservaValidator, handleValidationErrors, reservaController.edit);
 
 /**
  * @swagger
@@ -158,6 +159,6 @@ router.put('/:id', authenticateToken, authorizeRoles('administrador'), updateRes
  *       404:
  *         description: Reserva no encontrada
  */
-router.delete('/:id', authenticateToken, authorizeRoles('administrador'), deleteReservaValidator, handleValidationErrors, reservaController.delete);
+router.delete('/:id', invalidateCacheAfterWrite('reservas'), authenticateToken, authorizeRoles('administrador'), deleteReservaValidator, handleValidationErrors, reservaController.delete);
 
 module.exports = router;

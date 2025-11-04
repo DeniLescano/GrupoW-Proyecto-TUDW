@@ -9,6 +9,7 @@ const {
   getTurnoValidator,
   deleteTurnoValidator
 } = require('../validators/turnoValidator');
+const { listCache, invalidateCacheAfterWrite } = require('../middlewares/cache');
 
 /**
  * @swagger
@@ -20,7 +21,7 @@ const {
  *       200:
  *         description: Lista de turnos
  */
-router.get('/', turnoController.browse);
+router.get('/', listCache, turnoController.browse);
 
 /**
  * @swagger
@@ -41,7 +42,7 @@ router.get('/', turnoController.browse);
  *       404:
  *         description: Turno no encontrado
  */
-router.get('/:id', getTurnoValidator, handleValidationErrors, turnoController.read);
+router.get('/:id', listCache, getTurnoValidator, handleValidationErrors, turnoController.read);
 
 /**
  * @swagger
@@ -63,7 +64,7 @@ router.get('/:id', getTurnoValidator, handleValidationErrors, turnoController.re
  *       400:
  *         description: Error de validación
  */
-router.post('/', authenticateToken, authorizeRoles('empleado', 'administrador'), createTurnoValidator, handleValidationErrors, turnoController.add);
+router.post('/', invalidateCacheAfterWrite('turnos'), authenticateToken, authorizeRoles('empleado', 'administrador'), createTurnoValidator, handleValidationErrors, turnoController.add);
 
 /**
  * @swagger
@@ -94,7 +95,7 @@ router.post('/', authenticateToken, authorizeRoles('empleado', 'administrador'),
  *       404:
  *         description: Turno no encontrado
  */
-router.put('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'), updateTurnoValidator, handleValidationErrors, turnoController.edit);
+router.put('/:id', invalidateCacheAfterWrite('turnos'), authenticateToken, authorizeRoles('empleado', 'administrador'), updateTurnoValidator, handleValidationErrors, turnoController.edit);
 
 /**
  * @swagger
@@ -117,7 +118,7 @@ router.put('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'
  *       404:
  *         description: Turno no encontrado
  */
-router.delete('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'), deleteTurnoValidator, handleValidationErrors, turnoController.delete);
+router.delete('/:id', invalidateCacheAfterWrite('turnos'), authenticateToken, authorizeRoles('empleado', 'administrador'), deleteTurnoValidator, handleValidationErrors, turnoController.delete);
 
 module.exports = router;
 

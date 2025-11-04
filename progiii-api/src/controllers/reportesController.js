@@ -1,4 +1,5 @@
 const estadisticasService = require('../services/estadisticasService');
+const { successResponse, errorResponse } = require('../utils/responseFormatter');
 
 /**
  * Controlador para reportes
@@ -7,7 +8,7 @@ const estadisticasService = require('../services/estadisticasService');
 class ReportesController {
   /**
    * Obtener reporte de reservas para PDF/CSV
-   * GET /api/reportes/reservas?fecha_desde=YYYY-MM-DD&fecha_hasta=YYYY-MM-DD
+   * GET /api/v1/reportes/reservas?fecha_desde=YYYY-MM-DD&fecha_hasta=YYYY-MM-DD
    */
   async reporteReservas(req, res) {
     try {
@@ -18,21 +19,23 @@ class ReportesController {
         fecha_hasta || null
       );
       
-      res.json(reservas);
+      res.json(successResponse(reservas));
     } catch (error) {
       if (error.message.includes('formato') || 
           error.message.includes('anterior')) {
-        return res.status(400).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 400);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al generar reporte de reservas:', error);
-      res.status(500).json({ message: 'Error al generar el reporte', error: error.message });
+      const { response, statusCode } = errorResponse('Error al generar el reporte', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Exportar reservas a CSV
-   * GET /api/reportes/reservas/csv?fecha_desde=YYYY-MM-DD&fecha_hasta=YYYY-MM-DD
+   * GET /api/v1/reportes/reservas/csv?fecha_desde=YYYY-MM-DD&fecha_hasta=YYYY-MM-DD
    */
   async exportarReservasCSV(req, res) {
     try {
@@ -61,11 +64,13 @@ class ReportesController {
     } catch (error) {
       if (error.message.includes('formato') || 
           error.message.includes('anterior')) {
-        return res.status(400).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 400);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al exportar CSV:', error);
-      res.status(500).json({ message: 'Error al exportar el reporte CSV', error: error.message });
+      const { response, statusCode } = errorResponse('Error al exportar el reporte CSV', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 }

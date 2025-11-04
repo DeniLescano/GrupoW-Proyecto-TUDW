@@ -14,6 +14,21 @@ class TurnoService {
   }
 
   /**
+   * Obtener turnos con paginación, filtrado y ordenación
+   * @param {Object} options - Opciones de consulta
+   * @param {number} options.page - Página actual
+   * @param {number} options.limit - Límite por página
+   * @param {Object} options.filters - Filtros a aplicar
+   * @param {string} options.sortField - Campo por el cual ordenar
+   * @param {string} options.sortOrder - Orden (asc o desc)
+   * @param {boolean} options.includeInactive - Si incluir turnos inactivos
+   * @returns {Promise<Object>} Objeto con turnos y metadata de paginación
+   */
+  async getTurnosPaginated(options = {}) {
+    return await turnoRepository.findAllPaginated(options);
+  }
+
+  /**
    * Obtener un turno por ID
    * @param {number} id - ID del turno
    * @param {boolean} includeInactive - Si incluir turnos inactivos

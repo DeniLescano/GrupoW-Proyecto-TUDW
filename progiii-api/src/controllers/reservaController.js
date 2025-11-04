@@ -1,5 +1,6 @@
 const reservaService = require('../services/reservaService');
 const notificationService = require('../services/notificationService');
+const { successResponse, errorResponse } = require('../utils/responseFormatter');
 
 /**
  * Controlador para reservas
@@ -8,59 +9,94 @@ const notificationService = require('../services/notificationService');
 class ReservaController {
   /**
    * Obtener todas las reservas activas
-   * GET /api/reservas
+   * GET /api/v1/reservas
+   * Query params: page, limit, sort, order, estado, usuario_id, salon_id, turno_id, fecha_reserva, all
    */
   async browse(req, res) {
     try {
+      const includeInactive = req.query.all === 'true';
+      
+      // Si hay parámetros de paginación, usar método paginado
+      if (req.query.page || req.query.limit || req.query.sort || req.query.estado || req.query.usuario_id || req.query.salon_id || req.query.turno_id || req.query.fecha_reserva) {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const sortField = req.query.sort || 'fecha_reserva';
+        const sortOrder = req.query.order || 'desc';
+        
+        const filters = {};
+        if (req.query.estado) filters.estado = req.query.estado;
+        if (req.query.usuario_id) filters.usuario_id = parseInt(req.query.usuario_id);
+        if (req.query.salon_id) filters.salon_id = parseInt(req.query.salon_id);
+        if (req.query.turno_id) filters.turno_id = parseInt(req.query.turno_id);
+        if (req.query.fecha_reserva) filters.fecha_reserva = req.query.fecha_reserva;
+        
+        const result = await reservaService.getReservasPaginated({
+          page,
+          limit,
+          filters,
+          sortField,
+          sortOrder,
+          includeInactive
+        });
+        
+        return res.json(successResponse(result.data, null, { pagination: result.pagination }));
+      }
+      
+      // Si no hay paginación, usar método tradicional
       const reservas = await reservaService.getAllReservas();
-      res.json(reservas);
+      res.json(successResponse(reservas));
     } catch (error) {
       console.error('Error al obtener reservas:', error);
-      res.status(500).json({ message: 'Error al obtener las reservas', error: error.message });
+      const { response, statusCode } = errorResponse('Error al obtener las reservas', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Obtener reservas del usuario actual
-   * GET /api/reservas/mis-reservas
+   * GET /api/v1/reservas/mis-reservas
    */
   async browseByUser(req, res) {
     try {
       if (!req.user || !req.user.usuario_id) {
-        return res.status(401).json({ message: 'Usuario no autenticado' });
+        const { response, statusCode } = errorResponse('Usuario no autenticado', null, 401);
+        return res.status(statusCode).json(response);
       }
 
       const reservas = await reservaService.getReservasByUsuarioId(req.user.usuario_id);
-      res.json(reservas);
+      res.json(successResponse(reservas));
     } catch (error) {
       console.error('Error al obtener reservas del usuario:', error);
-      res.status(500).json({ message: 'Error al obtener las reservas', error: error.message });
+      const { response, statusCode } = errorResponse('Error al obtener las reservas', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Obtener una reserva por ID
-   * GET /api/reservas/:id
+   * GET /api/v1/reservas/:id
    */
   async read(req, res) {
     try {
       const { id } = req.params;
       
       const reserva = await reservaService.getReservaById(id);
-      res.json(reserva);
+      res.json(successResponse(reserva));
     } catch (error) {
       if (error.message === 'Reserva no encontrada') {
-        return res.status(404).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al obtener reserva:', error);
-      res.status(500).json({ message: 'Error al obtener la reserva', error: error.message });
+      const { response, statusCode } = errorResponse('Error al obtener la reserva', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Crear una nueva reserva
-   * POST /api/reservas
+   * POST /api/v1/reservas
    */
   async add(req, res) {
     try {
@@ -83,27 +119,26 @@ class ReservaController {
         console.error('Error al enviar notificaciones:', err);
       });
       
-      res.status(201).json({
-        message: 'Reserva creada correctamente',
-        reserva
-      });
+      res.status(201).json(successResponse(reserva, 'Reserva creada correctamente'));
     } catch (error) {
       if (error.message.includes('requeridos') || 
           error.message.includes('no encontrado') ||
           error.message.includes('inactivo') ||
           error.message.includes('enteros positivos') ||
           error.message.includes('formato')) {
-        return res.status(400).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 400);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al crear reserva:', error);
-      res.status(500).json({ message: 'Error al crear la reserva', error: error.message });
+      const { response, statusCode } = errorResponse('Error al crear la reserva', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Actualizar una reserva (solo administradores)
-   * PUT /api/reservas/:id
+   * PUT /api/v1/reservas/:id
    */
   async edit(req, res) {
     try {
@@ -126,30 +161,30 @@ class ReservaController {
         });
       }
       
-      res.json({
-        message: 'Reserva actualizada correctamente',
-        reserva
-      });
+      res.json(successResponse(reserva, 'Reserva actualizada correctamente'));
     } catch (error) {
       if (error.message === 'Reserva no encontrada' || 
           error.message === 'Reserva no encontrada para actualizar') {
-        return res.status(404).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
       }
       
       if (error.message.includes('no encontrado') ||
           error.message.includes('inactivo') ||
           error.message.includes('enteros positivos')) {
-        return res.status(400).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 400);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al actualizar reserva:', error);
-      res.status(500).json({ message: 'Error al actualizar la reserva', error: error.message });
+      const { response, statusCode } = errorResponse('Error al actualizar la reserva', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Confirmar una reserva (solo administradores)
-   * PUT /api/reservas/:id/confirmar
+   * PUT /api/v1/reservas/:id/confirmar
    */
   async confirmar(req, res) {
     try {
@@ -162,28 +197,28 @@ class ReservaController {
         console.error('Error al enviar notificación de confirmación:', err);
       });
       
-      res.json({
-        message: 'Reserva confirmada exitosamente',
-        reserva
-      });
+      res.json(successResponse(reserva, 'Reserva confirmada exitosamente'));
     } catch (error) {
       if (error.message === 'Reserva no encontrada' || 
           error.message === 'Reserva no encontrada para confirmar') {
-        return res.status(404).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
       }
       
       if (error.message.includes('ya está en estado')) {
-        return res.status(400).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 400);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al confirmar reserva:', error);
-      res.status(500).json({ message: 'Error al confirmar la reserva', error: error.message });
+      const { response, statusCode } = errorResponse('Error al confirmar la reserva', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Eliminar (soft delete) una reserva
-   * DELETE /api/reservas/:id
+   * DELETE /api/v1/reservas/:id
    */
   async delete(req, res) {
     try {
@@ -198,14 +233,16 @@ class ReservaController {
         });
       }
       
-      res.json({ message: 'Reserva eliminada correctamente (soft delete)' });
+      res.json(successResponse(null, 'Reserva eliminada correctamente (soft delete)'));
     } catch (error) {
       if (error.message === 'Reserva no encontrada para eliminar') {
-        return res.status(404).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al eliminar reserva:', error);
-      res.status(500).json({ message: 'Error al eliminar la reserva', error: error.message });
+      const { response, statusCode } = errorResponse('Error al eliminar la reserva', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 }

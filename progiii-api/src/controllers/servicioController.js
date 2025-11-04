@@ -1,4 +1,5 @@
 const servicioService = require('../services/servicioService');
+const { successResponse, errorResponse } = require('../utils/responseFormatter');
 
 /**
  * Controlador para servicios
@@ -7,21 +8,49 @@ const servicioService = require('../services/servicioService');
 class ServicioController {
   /**
    * Obtener todos los servicios activos
-   * GET /api/servicios
+   * GET /api/v1/servicios
+   * Query params: page, limit, sort, order, activo, descripcion, all
    */
   async browse(req, res) {
     try {
+      const includeInactive = req.query.all === 'true';
+      
+      // Si hay parámetros de paginación, usar método paginado
+      if (req.query.page || req.query.limit || req.query.sort || req.query.activo || req.query.descripcion) {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const sortField = req.query.sort || 'servicio_id';
+        const sortOrder = req.query.order || 'asc';
+        
+        const filters = {};
+        if (req.query.activo !== undefined) filters.activo = parseInt(req.query.activo);
+        if (req.query.descripcion) filters.descripcion = req.query.descripcion;
+        
+        const result = await servicioService.getServiciosPaginated({
+          page,
+          limit,
+          filters,
+          sortField,
+          sortOrder,
+          includeInactive
+        });
+        
+        return res.json(successResponse(result.data, null, { pagination: result.pagination }));
+      }
+      
+      // Si no hay paginación, usar método tradicional
       const servicios = await servicioService.getAllServicios();
-      res.json(servicios);
+      res.json(successResponse(servicios));
     } catch (error) {
       console.error('Error al obtener servicios:', error);
-      res.status(500).json({ message: 'Error al obtener los servicios', error: error.message });
+      const { response, statusCode } = errorResponse('Error al obtener los servicios', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Obtener un servicio por ID
-   * GET /api/servicios/:id
+   * GET /api/v1/servicios/:id
    */
   async read(req, res) {
     try {
@@ -29,43 +58,44 @@ class ServicioController {
       const includeInactive = req.query.all === 'true';
       
       const servicio = await servicioService.getServicioById(id, includeInactive);
-      res.json(servicio);
+      res.json(successResponse(servicio));
     } catch (error) {
       if (error.message === 'Servicio no encontrado') {
-        return res.status(404).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al obtener servicio:', error);
-      res.status(500).json({ message: 'Error al obtener el servicio', error: error.message });
+      const { response, statusCode } = errorResponse('Error al obtener el servicio', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Crear un nuevo servicio
-   * POST /api/servicios
+   * POST /api/v1/servicios
    */
   async add(req, res) {
     try {
       const servicio = await servicioService.createServicio(req.body);
       
-      res.status(201).json({
-        message: 'Servicio creado correctamente',
-        servicio
-      });
+      res.status(201).json(successResponse(servicio, 'Servicio creado correctamente'));
     } catch (error) {
       if (error.message.includes('requeridos') || 
           error.message.includes('negativo')) {
-        return res.status(400).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 400);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al crear servicio:', error);
-      res.status(500).json({ message: 'Error al crear el servicio', error: error.message });
+      const { response, statusCode } = errorResponse('Error al crear el servicio', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Actualizar un servicio
-   * PUT /api/servicios/:id
+   * PUT /api/v1/servicios/:id
    */
   async edit(req, res) {
     try {
@@ -73,29 +103,29 @@ class ServicioController {
       
       const servicio = await servicioService.updateServicio(id, req.body);
       
-      res.json({
-        message: 'Servicio actualizado correctamente',
-        servicio
-      });
+      res.json(successResponse(servicio, 'Servicio actualizado correctamente'));
     } catch (error) {
       if (error.message === 'Servicio no encontrado' || 
           error.message === 'Servicio no encontrado para actualizar') {
-        return res.status(404).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
       }
       
       if (error.message.includes('requeridos') || 
           error.message.includes('negativo')) {
-        return res.status(400).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 400);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al actualizar servicio:', error);
-      res.status(500).json({ message: 'Error al actualizar el servicio', error: error.message });
+      const { response, statusCode } = errorResponse('Error al actualizar el servicio', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Eliminar (soft delete) un servicio
-   * DELETE /api/servicios/:id
+   * DELETE /api/v1/servicios/:id
    */
   async delete(req, res) {
     try {
@@ -103,14 +133,16 @@ class ServicioController {
       
       await servicioService.deleteServicio(id);
       
-      res.json({ message: 'Servicio eliminado correctamente (soft delete)' });
+      res.json(successResponse(null, 'Servicio eliminado correctamente (soft delete)'));
     } catch (error) {
       if (error.message === 'Servicio no encontrado para eliminar') {
-        return res.status(404).json({ message: error.message });
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error al eliminar servicio:', error);
-      res.status(500).json({ message: 'Error al eliminar el servicio', error: error.message });
+      const { response, statusCode } = errorResponse('Error al eliminar el servicio', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 }

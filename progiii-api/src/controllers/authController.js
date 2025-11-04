@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const { successResponse, errorResponse } = require('../utils/responseFormatter');
 
 /**
  * Controlador para autenticación
@@ -7,7 +8,7 @@ const authService = require('../services/authService');
 class AuthController {
   /**
    * Iniciar sesión
-   * POST /api/auth/login
+   * POST /api/v1/auth/login
    */
   async login(req, res) {
     try {
@@ -15,35 +16,37 @@ class AuthController {
 
       const result = await authService.login(nombre_usuario, contrasenia);
 
-      res.json({
-        message: 'Login exitoso',
+      res.json(successResponse({
         token: result.token,
         usuario: result.usuario
-      });
+      }, 'Login exitoso'));
     } catch (error) {
       if (error.message === 'Usuario y contraseña son requeridos' || 
           error.message === 'Usuario o contraseña incorrectos' ||
           error.message === 'Usuario desactivado') {
         const statusCode = error.message === 'Usuario desactivado' ? 403 : 401;
-        return res.status(statusCode).json({ message: error.message });
+        const { response } = errorResponse(error.message, null, statusCode);
+        return res.status(statusCode).json(response);
       }
       
       console.error('Error en login:', error);
-      res.status(500).json({ message: 'Error al iniciar sesión', error: error.message });
+      const { response, statusCode } = errorResponse('Error al iniciar sesión', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 
   /**
    * Verificar token
-   * GET /api/auth/verify
+   * GET /api/v1/auth/verify
    */
   async verifyToken(req, res) {
     try {
       const result = await authService.verifyToken(req.user);
-      res.json(result);
+      res.json(successResponse(result));
     } catch (error) {
       console.error('Error al verificar token:', error);
-      res.status(500).json({ message: 'Error al verificar token', error: error.message });
+      const { response, statusCode } = errorResponse('Error al verificar token', error.message, 500);
+      res.status(statusCode).json(response);
     }
   }
 }

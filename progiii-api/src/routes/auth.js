@@ -4,6 +4,7 @@ const authController = require('../controllers/authController');
 const { authenticateToken } = require('../middlewares/auth');
 const { handleValidationErrors } = require('../middlewares/validationMiddleware');
 const { loginValidator } = require('../validators/authValidator');
+const { strictLimiter, publicLimiter } = require('../middlewares/rateLimiter');
 
 /**
  * @swagger
@@ -27,7 +28,7 @@ const { loginValidator } = require('../validators/authValidator');
  *       401:
  *         description: Credenciales inválidas
  */
-router.post('/login', loginValidator, handleValidationErrors, authController.login);
+router.post('/login', strictLimiter, loginValidator, handleValidationErrors, authController.login);
 
 /**
  * @swagger
@@ -43,7 +44,7 @@ router.post('/login', loginValidator, handleValidationErrors, authController.log
  *       401:
  *         description: Token inválido o expirado
  */
-router.get('/verify', authenticateToken, authController.verifyToken);
+router.get('/verify', publicLimiter, authenticateToken, authController.verifyToken);
 
 module.exports = router;
 

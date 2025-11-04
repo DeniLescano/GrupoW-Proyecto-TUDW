@@ -9,6 +9,7 @@ const {
   getSalonValidator,
   deleteSalonValidator
 } = require('../validators/salonValidator');
+const { listCache, invalidateCacheAfterWrite } = require('../middlewares/cache');
 
 /**
  * @swagger
@@ -26,7 +27,7 @@ const {
  *       200:
  *         description: Lista de salones
  */
-router.get('/', salonController.browse);
+router.get('/', listCache, salonController.browse);
 
 /**
  * @swagger
@@ -51,7 +52,7 @@ router.get('/', salonController.browse);
  *       200:
  *         description: Lista de salones disponibles
  */
-router.get('/disponibilidad', salonController.disponibilidad);
+router.get('/disponibilidad', listCache, salonController.disponibilidad);
 
 /**
  * @swagger
@@ -72,7 +73,7 @@ router.get('/disponibilidad', salonController.disponibilidad);
  *       404:
  *         description: Salón no encontrado
  */
-router.get('/:id', getSalonValidator, handleValidationErrors, salonController.read);
+router.get('/:id', listCache, getSalonValidator, handleValidationErrors, salonController.read);
 
 /**
  * @swagger
@@ -94,7 +95,7 @@ router.get('/:id', getSalonValidator, handleValidationErrors, salonController.re
  *       400:
  *         description: Error de validación
  */
-router.post('/', authenticateToken, authorizeRoles('empleado', 'administrador'), createSalonValidator, handleValidationErrors, salonController.add);
+router.post('/', invalidateCacheAfterWrite('salones'), authenticateToken, authorizeRoles('empleado', 'administrador'), createSalonValidator, handleValidationErrors, salonController.add);
 
 /**
  * @swagger
@@ -125,7 +126,7 @@ router.post('/', authenticateToken, authorizeRoles('empleado', 'administrador'),
  *       404:
  *         description: Salón no encontrado
  */
-router.put('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'), updateSalonValidator, handleValidationErrors, salonController.edit);
+router.put('/:id', invalidateCacheAfterWrite('salones'), authenticateToken, authorizeRoles('empleado', 'administrador'), updateSalonValidator, handleValidationErrors, salonController.edit);
 
 /**
  * @swagger
@@ -148,6 +149,6 @@ router.put('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'
  *       404:
  *         description: Salón no encontrado
  */
-router.delete('/:id', authenticateToken, authorizeRoles('empleado', 'administrador'), deleteSalonValidator, handleValidationErrors, salonController.delete);
+router.delete('/:id', invalidateCacheAfterWrite('salones'), authenticateToken, authorizeRoles('empleado', 'administrador'), deleteSalonValidator, handleValidationErrors, salonController.delete);
 
 module.exports = router;

@@ -22,6 +22,84 @@ class SalonRepository {
   }
 
   /**
+   * Obtener salones con paginación, filtrado y ordenación
+   * @param {Object} options - Opciones de consulta
+   * @param {number} options.page - Página actual
+   * @param {number} options.limit - Límite por página
+   * @param {Object} options.filters - Filtros a aplicar
+   * @param {string} options.sortField - Campo por el cual ordenar
+   * @param {string} options.sortOrder - Orden (asc o desc)
+   * @param {boolean} options.includeInactive - Si incluir salones inactivos
+   * @returns {Promise<Object>} Objeto con salones y metadata de paginación
+   */
+  async findAllPaginated(options = {}) {
+    const {
+      page = 1,
+      limit = 10,
+      filters = {},
+      sortField = 'salon_id',
+      sortOrder = 'asc',
+      includeInactive = false
+    } = options;
+
+    let baseQuery = 'SELECT * FROM salones';
+    const values = [];
+    
+    // Construir condiciones WHERE
+    const conditions = [];
+    if (!includeInactive) {
+      conditions.push('activo = 1');
+    }
+    
+    // Aplicar filtros permitidos
+    const allowedFilterFields = ['activo', 'titulo', 'direccion'];
+    Object.keys(filters).forEach(key => {
+      if (allowedFilterFields.includes(key) && filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        if (key === 'titulo' || key === 'direccion') {
+          conditions.push(`${key} LIKE ?`);
+          values.push(`%${filters[key]}%`);
+        } else {
+          conditions.push(`${key} = ?`);
+          values.push(filters[key]);
+        }
+      }
+    });
+    
+    if (conditions.length > 0) {
+      baseQuery += ` WHERE ${conditions.join(' AND ')}`;
+    }
+    
+    // Aplicar ordenación
+    const allowedSortFields = ['salon_id', 'titulo', 'direccion', 'capacidad', 'importe', 'creado', 'modificado'];
+    if (allowedSortFields.includes(sortField)) {
+      const order = sortOrder.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+      baseQuery += ` ORDER BY ${sortField} ${order}`;
+    }
+    
+    // Obtener total de registros
+    const countQuery = baseQuery.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
+    const [countResult] = await db.query(countQuery, values);
+    const total = countResult[0].total;
+    
+    // Aplicar paginación
+    const offset = (page - 1) * limit;
+    baseQuery += ` LIMIT ? OFFSET ?`;
+    const paginatedValues = [...values, limit, offset];
+    
+    const [salones] = await db.query(baseQuery, paginatedValues);
+    
+    return {
+      data: salones,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  /**
    * Obtener un salón por ID
    * @param {number} id - ID del salón
    * @param {boolean} includeInactive - Si incluir salones inactivos

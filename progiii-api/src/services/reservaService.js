@@ -24,6 +24,28 @@ class ReservaService {
   }
 
   /**
+   * Obtener reservas con paginación, filtrado y ordenación
+   * @param {Object} options - Opciones de consulta
+   * @param {number} options.page - Página actual
+   * @param {number} options.limit - Límite por página
+   * @param {Object} options.filters - Filtros a aplicar
+   * @param {string} options.sortField - Campo por el cual ordenar
+   * @param {string} options.sortOrder - Orden (asc o desc)
+   * @param {boolean} options.includeInactive - Si incluir reservas inactivas
+   * @returns {Promise<Object>} Objeto con reservas y metadata de paginación
+   */
+  async getReservasPaginated(options = {}) {
+    const result = await reservaRepository.findAllPaginated(options);
+    
+    // Agregar servicios a cada reserva
+    for (const reserva of result.data) {
+      reserva.servicios = await reservaRepository.findServiciosByReservaId(reserva.reserva_id);
+    }
+    
+    return result;
+  }
+
+  /**
    * Obtener reservas de un usuario
    * @param {number} usuarioId - ID del usuario
    * @returns {Promise<Array>} Array de reservas con servicios
