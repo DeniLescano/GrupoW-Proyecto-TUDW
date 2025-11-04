@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         showViewMode();
         detailsModal.style.display = 'flex';
+        setTimeout(() => detailsModal.classList.add('show'), 10);
     }
 
     async function fetchServicios() {
