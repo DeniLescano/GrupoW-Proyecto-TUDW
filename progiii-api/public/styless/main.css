@@ -481,6 +481,11 @@ button:hover {
 
 .modal.show {
     display: flex;
+    animation: fadeInBackdrop 0.3s ease-out;
+}
+
+.modal:not(.show) {
+    animation: fadeOutBackdrop 0.3s ease-in;
 }
 
 .modal-content {
@@ -553,6 +558,26 @@ button:hover {
         opacity: 1; 
         transform: translateX(0);
     }
+}
+
+@keyframes fadeOutBackdrop {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes slideOutDown {
+    from { 
+        opacity: 1; 
+        transform: translateY(0) scale(1);
+    }
+    to { 
+        opacity: 0; 
+        transform: translateY(30px) scale(0.95);
+    }
+}
+
+.modal:not(.show) .modal-content {
+    animation: slideOutDown 0.3s ease-in;
 }
 
 .close-button {

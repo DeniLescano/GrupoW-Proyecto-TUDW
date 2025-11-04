@@ -139,25 +139,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     openAddModalBtn.addEventListener('click', () => {
         addModal.style.display = 'flex';
+        addModal.classList.add('show');
         addServicioForm.reset();
     });
 
     closeAddModalBtn.addEventListener('click', () => {
-        addModal.style.display = 'none';
+        addModal.classList.remove('show');
+        setTimeout(() => {
+            addModal.style.display = 'none';
+        }, 300);
     });
 
     closeDetailsModalBtn.addEventListener('click', () => {
-        detailsModal.style.display = 'none';
-        showViewMode();
+        detailsModal.classList.remove('show');
+        setTimeout(() => {
+            detailsModal.style.display = 'none';
+            showViewMode();
+        }, 300);
     });
 
     window.addEventListener('click', (event) => {
         if (event.target === addModal) {
-            addModal.style.display = 'none';
+            addModal.classList.remove('show');
+            setTimeout(() => {
+                addModal.style.display = 'none';
+            }, 300);
         }
         if (event.target === detailsModal) {
-            detailsModal.style.display = 'none';
-            showViewMode();
+            detailsModal.classList.remove('show');
+            setTimeout(() => {
+                detailsModal.style.display = 'none';
+                showViewMode();
+            }, 300);
         }
     });
 
