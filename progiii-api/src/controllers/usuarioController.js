@@ -1,121 +1,123 @@
-const db = require('../config/database');
-const bcrypt = require('bcryptjs');
+const usuarioService = require('../services/usuarioService');
 
-exports.browse = async (req, res) => {
-  try {
-    const [usuarios] = await db.query(
-      'SELECT usuario_id, nombre, apellido, nombre_usuario, tipo_usuario, celular, activo, creado, modificado FROM usuarios'
-    );
-    res.json(usuarios);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los usuarios', error: error.message });
-  }
-};
-
-exports.read = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [usuario] = await db.query(
-      'SELECT usuario_id, nombre, apellido, nombre_usuario, tipo_usuario, celular, activo, foto, creado, modificado FROM usuarios WHERE usuario_id = ?',
-      [id]
-    );
-    if (usuario.length === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+/**
+ * Controlador para usuarios
+ * Solo maneja HTTP (req/res), delega lógica de negocio a servicios
+ */
+class UsuarioController {
+  /**
+   * Obtener todos los usuarios
+   * GET /api/usuarios
+   */
+  async browse(req, res) {
+    try {
+      const includeInactive = req.query.all === 'true';
+      const usuarios = await usuarioService.getAllUsuarios(includeInactive);
+      res.json(usuarios);
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error);
+      res.status(500).json({ message: 'Error al obtener los usuarios', error: error.message });
     }
-    res.json(usuario[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener el usuario', error: error.message });
   }
-};
 
-exports.add = async (req, res) => {
-  const { nombre, apellido, nombre_usuario, contrasenia, tipo_usuario, celular, foto } = req.body;
-  try {
-    // Verificar si el usuario ya existe
-    const [existing] = await db.query(
-      'SELECT usuario_id FROM usuarios WHERE nombre_usuario = ?',
-      [nombre_usuario]
-    );
-
-    if (existing.length > 0) {
-      return res.status(400).json({ message: 'El nombre de usuario ya existe' });
+  /**
+   * Obtener un usuario por ID
+   * GET /api/usuarios/:id
+   */
+  async read(req, res) {
+    try {
+      const { id } = req.params;
+      const includeInactive = req.query.all === 'true';
+      
+      const usuario = await usuarioService.getUsuarioById(id, includeInactive);
+      res.json(usuario);
+    } catch (error) {
+      if (error.message === 'Usuario no encontrado') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      console.error('Error al obtener usuario:', error);
+      res.status(500).json({ message: 'Error al obtener el usuario', error: error.message });
     }
-
-    // Hashear contraseña
-    const hashedPassword = await bcrypt.hash(contrasenia, 10);
-
-    const [result] = await db.query(
-      'INSERT INTO usuarios (nombre, apellido, nombre_usuario, contrasenia, tipo_usuario, celular, foto) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [nombre, apellido, nombre_usuario, hashedPassword, tipo_usuario || 1, celular || null, foto || null]
-    );
-    res.status(201).json({ message: 'Usuario creado correctamente', id: result.insertId });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear el usuario', error: error.message });
-  }
-};
-
-exports.edit = async (req, res) => {
-  const { id } = req.params;
-  const { nombre, apellido, nombre_usuario, tipo_usuario, celular, activo, foto } = req.body;
-
-  // Prevenir que un usuario se desactive a sí mismo
-  if (req.user && req.user.usuario_id == id && activo === 0) {
-    return res.status(403).json({ 
-      message: 'No puedes desactivar tu propio usuario. Si necesitas hacerlo, contacta a otro administrador.' 
-    });
   }
 
-  const isStatusUpdateOnly = Object.keys(req.body).length === 1 && req.body.hasOwnProperty('activo');
-
-  let sql, params;
-
-  if (isStatusUpdateOnly) {
-    sql = 'UPDATE usuarios SET activo = ? WHERE usuario_id = ?';
-    params = [activo, id];
-  } else {
-    sql = 'UPDATE usuarios SET nombre = ?, apellido = ?, nombre_usuario = ?, tipo_usuario = ?, celular = ?, activo = ?, foto = ? WHERE usuario_id = ?';
-    params = [nombre, apellido, nombre_usuario, tipo_usuario, celular || null, activo !== undefined ? activo : 1, foto || null, id];
-  }
-  
-  try {
-    const [result] = await db.query(sql, params);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado para actualizar' });
-    }
-    
-    // Si se desactivó el usuario, verificar si es el usuario actual y cerrar sesión
-    if (req.user && req.user.usuario_id == id && activo === 0) {
-      // Esto no debería pasar por la validación anterior, pero por si acaso
-      return res.status(403).json({ 
-        message: 'No puedes desactivar tu propio usuario.' 
+  /**
+   * Crear un nuevo usuario
+   * POST /api/usuarios
+   */
+  async add(req, res) {
+    try {
+      const usuario = await usuarioService.createUsuario(req.body);
+      
+      res.status(201).json({
+        message: 'Usuario creado correctamente',
+        id: usuario.usuario_id
       });
+    } catch (error) {
+      if (error.message === 'El nombre de usuario ya existe') {
+        return res.status(400).json({ message: error.message });
+      }
+      
+      console.error('Error al crear usuario:', error);
+      res.status(500).json({ message: 'Error al crear el usuario', error: error.message });
     }
-    
-    res.json({ message: 'Usuario actualizado correctamente' });
-
-  } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el usuario', error: error.message });
   }
-};
 
-exports.delete = async (req, res) => {
-  const { id } = req.params;
-  
-  // Prevenir que un usuario se desactive a sí mismo
-  if (req.user && req.user.usuario_id == id) {
-    return res.status(403).json({ 
-      message: 'No puedes desactivar tu propio usuario. Si necesitas hacerlo, contacta a otro administrador.' 
-    });
-  }
-  
-  try {
-    const [result] = await db.query('UPDATE usuarios SET activo = 0 WHERE usuario_id = ?', [id]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Usuario no encontrado para eliminar' });
+  /**
+   * Actualizar un usuario
+   * PUT /api/usuarios/:id
+   */
+  async edit(req, res) {
+    try {
+      const { id } = req.params;
+      const currentUserId = req.user ? req.user.usuario_id : null;
+      
+      const usuario = await usuarioService.updateUsuario(id, req.body, currentUserId);
+      
+      res.json({
+        message: 'Usuario actualizado correctamente',
+        usuario
+      });
+    } catch (error) {
+      if (error.message === 'Usuario no encontrado' || 
+          error.message === 'Usuario no encontrado para actualizar') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      if (error.message.includes('No puedes desactivar tu propio usuario')) {
+        return res.status(403).json({ message: error.message });
+      }
+      
+      console.error('Error al actualizar usuario:', error);
+      res.status(500).json({ message: 'Error al actualizar el usuario', error: error.message });
     }
-    res.json({ message: 'Usuario eliminado correctamente (soft delete)' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar el usuario', error: error.message });
   }
-};
+
+  /**
+   * Eliminar (soft delete) un usuario
+   * DELETE /api/usuarios/:id
+   */
+  async delete(req, res) {
+    try {
+      const { id } = req.params;
+      const currentUserId = req.user ? req.user.usuario_id : null;
+      
+      await usuarioService.deleteUsuario(id, currentUserId);
+      
+      res.json({ message: 'Usuario eliminado correctamente (soft delete)' });
+    } catch (error) {
+      if (error.message === 'Usuario no encontrado para eliminar') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      if (error.message.includes('No puedes desactivar tu propio usuario')) {
+        return res.status(403).json({ message: error.message });
+      }
+      
+      console.error('Error al eliminar usuario:', error);
+      res.status(500).json({ message: 'Error al eliminar el usuario', error: error.message });
+    }
+  }
+}
+
+module.exports = new UsuarioController();

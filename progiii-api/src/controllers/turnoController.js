@@ -1,89 +1,122 @@
-const db = require('../config/database');
+const turnoService = require('../services/turnoService');
 
-exports.browse = async (req, res) => {
-  try {
-    const [turnos] = await db.query('SELECT * FROM turnos WHERE activo = 1 ORDER BY orden ASC');
-    res.json(turnos);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener los turnos', error: error.message });
-  }
-};
-
-exports.read = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [turno] = await db.query(
-      'SELECT * FROM turnos WHERE turno_id = ? AND activo = 1',
-      [id]
-    );
-    if (turno.length === 0) {
-      return res.status(404).json({ message: 'Turno no encontrado' });
+/**
+ * Controlador para turnos
+ * Solo maneja HTTP (req/res), delega lógica de negocio a servicios
+ */
+class TurnoController {
+  /**
+   * Obtener todos los turnos activos ordenados
+   * GET /api/turnos
+   */
+  async browse(req, res) {
+    try {
+      const turnos = await turnoService.getAllTurnos();
+      res.json(turnos);
+    } catch (error) {
+      console.error('Error al obtener turnos:', error);
+      res.status(500).json({ message: 'Error al obtener los turnos', error: error.message });
     }
-    res.json(turno[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener el turno', error: error.message });
-  }
-};
-
-exports.add = async (req, res) => {
-  const { orden, hora_desde, hora_hasta } = req.body;
-
-  if (!orden || !hora_desde || !hora_hasta) {
-    return res.status(400).json({ message: 'Orden, hora_desde y hora_hasta son requeridos' });
   }
 
-  try {
-    const [result] = await db.query(
-      'INSERT INTO turnos (orden, hora_desde, hora_hasta) VALUES (?, ?, ?)',
-      [orden, hora_desde, hora_hasta]
-    );
-    
-    const nuevoTurnoId = result.insertId;
-    const [nuevoTurno] = await db.query('SELECT * FROM turnos WHERE turno_id = ?', [nuevoTurnoId]);
-
-    res.status(201).json({ message: 'Turno creado correctamente', turno: nuevoTurno[0] });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear el turno', error: error.message });
-  }
-};
-
-exports.edit = async (req, res) => {
-  const { id } = req.params;
-  const { orden, hora_desde, hora_hasta } = req.body;
-
-  if (!orden || !hora_desde || !hora_hasta) {
-    return res.status(400).json({ message: 'Orden, hora_desde y hora_hasta son requeridos' });
-  }
-
-  try {
-    const [result] = await db.query(
-      'UPDATE turnos SET orden = ?, hora_desde = ?, hora_hasta = ? WHERE turno_id = ?',
-      [orden, hora_desde, hora_hasta, id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Turno no encontrado para actualizar' });
+  /**
+   * Obtener un turno por ID
+   * GET /api/turnos/:id
+   */
+  async read(req, res) {
+    try {
+      const { id } = req.params;
+      const includeInactive = req.query.all === 'true';
+      
+      const turno = await turnoService.getTurnoById(id, includeInactive);
+      res.json(turno);
+    } catch (error) {
+      if (error.message === 'Turno no encontrado') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      console.error('Error al obtener turno:', error);
+      res.status(500).json({ message: 'Error al obtener el turno', error: error.message });
     }
-
-    const [turnoActualizado] = await db.query('SELECT * FROM turnos WHERE turno_id = ?', [id]);
-    res.json({ message: 'Turno actualizado correctamente', turno: turnoActualizado[0] });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el turno', error: error.message });
   }
-};
 
-exports.delete = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [result] = await db.query('UPDATE turnos SET activo = 0 WHERE turno_id = ?', [id]);
-    
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Turno no encontrado para eliminar' });
+  /**
+   * Crear un nuevo turno
+   * POST /api/turnos
+   */
+  async add(req, res) {
+    try {
+      const turno = await turnoService.createTurno(req.body);
+      
+      res.status(201).json({
+        message: 'Turno creado correctamente',
+        turno
+      });
+    } catch (error) {
+      if (error.message.includes('requeridos') || 
+          error.message.includes('mayor a 0') ||
+          error.message.includes('formato') ||
+          error.message.includes('posterior')) {
+        return res.status(400).json({ message: error.message });
+      }
+      
+      console.error('Error al crear turno:', error);
+      res.status(500).json({ message: 'Error al crear el turno', error: error.message });
     }
-
-    res.json({ message: 'Turno eliminado correctamente (soft delete)' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar el turno', error: error.message });
   }
-};
 
+  /**
+   * Actualizar un turno
+   * PUT /api/turnos/:id
+   */
+  async edit(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const turno = await turnoService.updateTurno(id, req.body);
+      
+      res.json({
+        message: 'Turno actualizado correctamente',
+        turno
+      });
+    } catch (error) {
+      if (error.message === 'Turno no encontrado' || 
+          error.message === 'Turno no encontrado para actualizar') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      if (error.message.includes('requeridos') || 
+          error.message.includes('mayor a 0') ||
+          error.message.includes('formato') ||
+          error.message.includes('posterior')) {
+        return res.status(400).json({ message: error.message });
+      }
+      
+      console.error('Error al actualizar turno:', error);
+      res.status(500).json({ message: 'Error al actualizar el turno', error: error.message });
+    }
+  }
+
+  /**
+   * Eliminar (soft delete) un turno
+   * DELETE /api/turnos/:id
+   */
+  async delete(req, res) {
+    try {
+      const { id } = req.params;
+      
+      await turnoService.deleteTurno(id);
+      
+      res.json({ message: 'Turno eliminado correctamente (soft delete)' });
+    } catch (error) {
+      if (error.message === 'Turno no encontrado para eliminar') {
+        return res.status(404).json({ message: error.message });
+      }
+      
+      console.error('Error al eliminar turno:', error);
+      res.status(500).json({ message: 'Error al eliminar el turno', error: error.message });
+    }
+  }
+}
+
+module.exports = new TurnoController();

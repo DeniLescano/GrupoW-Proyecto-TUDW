@@ -1,57 +1,46 @@
-// Servicio de notificaciones automáticas
-const db = require('../config/database');
+const reservaRepository = require('../repositories/reservaRepository');
+const notificacionRepository = require('../repositories/notificacionRepository');
 
+/**
+ * Servicio para lógica de negocio de Notificaciones
+ * Contiene toda la lógica de negocio, usa repositories para acceso a datos
+ */
 class NotificationService {
   /**
    * Enviar notificación cuando se crea una reserva
+   * @param {number} reservaId - ID de la reserva
+   * @param {number} clienteId - ID del cliente
+   * @returns {Promise<void>}
    */
-  static async notifyReservaCreated(reservaId, clienteId) {
+  async notifyReservaCreated(reservaId, clienteId) {
     try {
       // Obtener información de la reserva
-      const [reserva] = await db.query(
-        `SELECT r.*, s.titulo as salon_nombre, t.hora_desde, t.hora_hasta, u.nombre as cliente_nombre, u.apellido as cliente_apellido
-         FROM reservas r
-         JOIN salones s ON r.salon_id = s.salon_id
-         JOIN turnos t ON r.turno_id = t.turno_id
-         JOIN usuarios u ON r.usuario_id = u.usuario_id
-         WHERE r.reserva_id = ?`,
-        [reservaId]
-      );
-
-      if (reserva.length === 0) return;
-
-      const reservaData = reserva[0];
+      const reserva = await reservaRepository.findById(reservaId);
+      
+      if (!reserva) {
+        return;
+      }
       
       // Guardar notificación en base de datos para el cliente
-      await db.query(
-        `INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, leida, fecha_creacion)
-         VALUES (?, ?, ?, ?, 0, NOW())`,
-        [
-          clienteId,
-          'reserva_creada',
-          'Reserva Creada',
-          `Su reserva en ${reservaData.salon_nombre} para el ${reservaData.fecha_reserva} de ${reservaData.hora_desde} a ${reservaData.hora_hasta} ha sido creada. Estado: ${reservaData.estado || 'pendiente'}.`
-        ]
-      );
-
+      await notificacionRepository.create({
+        usuario_id: clienteId,
+        tipo: 'reserva_creada',
+        titulo: 'Reserva Creada',
+        mensaje: `Su reserva en ${reserva.salon_titulo} para el ${reserva.fecha_reserva} de ${reserva.hora_desde} a ${reserva.hora_hasta} ha sido creada. Estado: ${reserva.estado || 'pendiente'}.`
+      });
+      
       // Notificar a empleados y administradores
-      const [empleados] = await db.query(
-        `SELECT usuario_id FROM usuarios WHERE tipo_usuario IN (2, 3) AND activo = 1`
-      );
-
+      const empleados = await notificacionRepository.findEmpleadosYAdministradores();
+      
       for (const empleado of empleados) {
-        await db.query(
-          `INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, leida, fecha_creacion)
-           VALUES (?, ?, ?, ?, 0, NOW())`,
-          [
-            empleado.usuario_id,
-            'nueva_reserva',
-            'Nueva Reserva',
-            `Se ha creado una nueva reserva en ${reservaData.salon_nombre} para el ${reservaData.fecha_reserva} por ${reservaData.cliente_nombre} ${reservaData.cliente_apellido}.`
-          ]
-        );
+        await notificacionRepository.create({
+          usuario_id: empleado.usuario_id,
+          tipo: 'nueva_reserva',
+          titulo: 'Nueva Reserva',
+          mensaje: `Se ha creado una nueva reserva en ${reserva.salon_titulo} para el ${reserva.fecha_reserva} por ${reserva.usuario_nombre} ${reserva.usuario_apellido}.`
+        });
       }
-
+      
       console.log(`✅ Notificaciones enviadas para reserva ${reservaId}`);
     } catch (error) {
       console.error('❌ Error al enviar notificaciones de reserva creada:', error);
@@ -60,35 +49,25 @@ class NotificationService {
 
   /**
    * Enviar notificación cuando se confirma una reserva
+   * @param {number} reservaId - ID de la reserva
+   * @returns {Promise<void>}
    */
-  static async notifyReservaConfirmed(reservaId) {
+  async notifyReservaConfirmed(reservaId) {
     try {
-      const [reserva] = await db.query(
-        `SELECT r.*, s.titulo as salon_nombre, t.hora_desde, t.hora_hasta, u.nombre as cliente_nombre, u.apellido as cliente_apellido
-         FROM reservas r
-         JOIN salones s ON r.salon_id = s.salon_id
-         JOIN turnos t ON r.turno_id = t.turno_id
-         JOIN usuarios u ON r.usuario_id = u.usuario_id
-         WHERE r.reserva_id = ?`,
-        [reservaId]
-      );
-
-      if (reserva.length === 0) return;
-
-      const reservaData = reserva[0];
+      const reserva = await reservaRepository.findById(reservaId);
+      
+      if (!reserva) {
+        return;
+      }
       
       // Notificar al cliente que su reserva fue confirmada
-      await db.query(
-        `INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, leida, fecha_creacion)
-         VALUES (?, ?, ?, ?, 0, NOW())`,
-        [
-          reservaData.usuario_id,
-          'reserva_confirmada',
-          'Reserva Confirmada',
-          `Su reserva en ${reservaData.salon_nombre} para el ${reservaData.fecha_reserva} de ${reservaData.hora_desde} a ${reservaData.hora_hasta} ha sido CONFIRMADA. ¡Ya puede confirmar su asistencia!`
-        ]
-      );
-
+      await notificacionRepository.create({
+        usuario_id: reserva.usuario_id,
+        tipo: 'reserva_confirmada',
+        titulo: 'Reserva Confirmada',
+        mensaje: `Su reserva en ${reserva.salon_titulo} para el ${reserva.fecha_reserva} de ${reserva.hora_desde} a ${reserva.hora_hasta} ha sido CONFIRMADA. ¡Ya puede confirmar su asistencia!`
+      });
+      
       console.log(`✅ Notificación de confirmación enviada para reserva ${reservaId}`);
     } catch (error) {
       console.error('❌ Error al enviar notificación de confirmación:', error);
@@ -97,33 +76,25 @@ class NotificationService {
 
   /**
    * Enviar notificación cuando se actualiza una reserva
+   * @param {number} reservaId - ID de la reserva
+   * @param {string} cambios - Descripción de los cambios
+   * @returns {Promise<void>}
    */
-  static async notifyReservaUpdated(reservaId, cambios) {
+  async notifyReservaUpdated(reservaId, cambios) {
     try {
-      const [reserva] = await db.query(
-        `SELECT r.*, s.titulo as salon_nombre, u.nombre as cliente_nombre, u.apellido as cliente_apellido
-         FROM reservas r
-         JOIN salones s ON r.salon_id = s.salon_id
-         JOIN usuarios u ON r.usuario_id = u.usuario_id
-         WHERE r.reserva_id = ?`,
-        [reservaId]
-      );
-
-      if (reserva.length === 0) return;
-
-      const reservaData = reserva[0];
+      const reserva = await reservaRepository.findById(reservaId);
       
-      await db.query(
-        `INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, leida, fecha_creacion)
-         VALUES (?, ?, ?, ?, 0, NOW())`,
-        [
-          reservaData.usuario_id,
-          'reserva_actualizada',
-          'Reserva Actualizada',
-          `Su reserva en ${reservaData.salon_nombre} ha sido actualizada. ${cambios || ''}`
-        ]
-      );
-
+      if (!reserva) {
+        return;
+      }
+      
+      await notificacionRepository.create({
+        usuario_id: reserva.usuario_id,
+        tipo: 'reserva_actualizada',
+        titulo: 'Reserva Actualizada',
+        mensaje: `Su reserva en ${reserva.salon_titulo} ha sido actualizada. ${cambios || ''}`
+      });
+      
       console.log(`✅ Notificación de actualización enviada para reserva ${reservaId}`);
     } catch (error) {
       console.error('❌ Error al enviar notificación de actualización:', error);
@@ -132,33 +103,24 @@ class NotificationService {
 
   /**
    * Enviar notificación cuando se cancela una reserva
+   * @param {number} reservaId - ID de la reserva
+   * @returns {Promise<void>}
    */
-  static async notifyReservaCancelled(reservaId) {
+  async notifyReservaCancelled(reservaId) {
     try {
-      const [reserva] = await db.query(
-        `SELECT r.*, s.titulo as salon_nombre, u.nombre as cliente_nombre, u.apellido as cliente_apellido
-         FROM reservas r
-         JOIN salones s ON r.salon_id = s.salon_id
-         JOIN usuarios u ON r.usuario_id = u.usuario_id
-         WHERE r.reserva_id = ?`,
-        [reservaId]
-      );
-
-      if (reserva.length === 0) return;
-
-      const reservaData = reserva[0];
+      const reserva = await reservaRepository.findById(reservaId);
       
-      await db.query(
-        `INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, leida, fecha_creacion)
-         VALUES (?, ?, ?, ?, 0, NOW())`,
-        [
-          reservaData.usuario_id,
-          'reserva_cancelada',
-          'Reserva Cancelada',
-          `Su reserva en ${reservaData.salon_nombre} para el ${reservaData.fecha_reserva} ha sido cancelada.`
-        ]
-      );
-
+      if (!reserva) {
+        return;
+      }
+      
+      await notificacionRepository.create({
+        usuario_id: reserva.usuario_id,
+        tipo: 'reserva_cancelada',
+        titulo: 'Reserva Cancelada',
+        mensaje: `Su reserva en ${reserva.salon_titulo} para el ${reserva.fecha_reserva} ha sido cancelada.`
+      });
+      
       console.log(`✅ Notificación de cancelación enviada para reserva ${reservaId}`);
     } catch (error) {
       console.error('❌ Error al enviar notificación de cancelación:', error);
@@ -167,50 +129,40 @@ class NotificationService {
 
   /**
    * Enviar notificación de recordatorio de reserva
+   * @returns {Promise<void>}
    */
-  static async notifyReservaReminder() {
+  async notifyReservaReminder() {
     try {
       // Obtener reservas del día siguiente
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       const fechaFormato = tomorrow.toISOString().split('T')[0];
-
-      const [reservas] = await db.query(
-        `SELECT r.*, s.titulo as salon_nombre, t.hora_desde, t.hora_hasta, u.nombre as cliente_nombre, u.usuario_id as cliente_id
-         FROM reservas r
-         JOIN salones s ON r.salon_id = s.salon_id
-         JOIN turnos t ON r.turno_id = t.turno_id
-         JOIN usuarios u ON r.usuario_id = u.usuario_id
-         WHERE r.fecha_reserva = ? AND r.activo = 1 AND (r.estado = 'confirmada' OR r.estado IS NULL)
-         `,
-        [fechaFormato]
-      );
-
-      for (const reserva of reservas) {
+      
+      // Obtener todas las reservas activas
+      const reservas = await reservaRepository.findAll();
+      
+      // Filtrar reservas del día siguiente
+      const reservasTomorrow = reservas.filter(r => {
+        const reservaFecha = new Date(r.fecha_reserva).toISOString().split('T')[0];
+        return reservaFecha === fechaFormato && (r.estado === 'confirmada' || !r.estado);
+      });
+      
+      for (const reserva of reservasTomorrow) {
         // Verificar si ya se envió recordatorio
-        const [existentes] = await db.query(
-          `SELECT id FROM notificaciones 
-           WHERE usuario_id = ? AND tipo = 'recordatorio_reserva' 
-           AND DATE(fecha_creacion) = CURDATE() 
-           AND mensaje LIKE ?`,
-          [reserva.cliente_id, `%Reserva ${reserva.reserva_id}%`]
-        );
-
-        if (existentes.length === 0) {
-          await db.query(
-            `INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, leida, fecha_creacion)
-             VALUES (?, ?, ?, ?, 0, NOW())`,
-            [
-              reserva.cliente_id,
-              'recordatorio_reserva',
-              'Recordatorio de Reserva',
-              `Recuerde que tiene una reserva mañana en ${reserva.salon_nombre} a las ${reserva.hora_desde}.`
-            ]
-          );
+        const mensajePattern = `%Reserva ${reserva.reserva_id}%`;
+        const existe = await notificacionRepository.existsRecordatorioToday(reserva.usuario_id, mensajePattern);
+        
+        if (!existe) {
+          await notificacionRepository.create({
+            usuario_id: reserva.usuario_id,
+            tipo: 'recordatorio_reserva',
+            titulo: 'Recordatorio de Reserva',
+            mensaje: `Recuerde que tiene una reserva mañana en ${reserva.salon_titulo} a las ${reserva.hora_desde}.`
+          });
         }
       }
-
-      console.log(`✅ Recordatorios enviados para ${reservas.length} reservas`);
+      
+      console.log(`✅ Recordatorios enviados para ${reservasTomorrow.length} reservas`);
     } catch (error) {
       console.error('❌ Error al enviar recordatorios:', error);
     }
@@ -218,18 +170,13 @@ class NotificationService {
 
   /**
    * Obtener notificaciones de un usuario
+   * @param {number} userId - ID del usuario
+   * @param {number} limit - Límite de resultados
+   * @returns {Promise<Array>} Array de notificaciones
    */
-  static async getUserNotifications(userId, limit = 20) {
+  async getUserNotifications(userId, limit = 20) {
     try {
-      const [notificaciones] = await db.query(
-        `SELECT * FROM notificaciones 
-         WHERE usuario_id = ? 
-         ORDER BY fecha_creacion DESC 
-         LIMIT ?`,
-        [userId, limit]
-      );
-
-      return notificaciones;
+      return await notificacionRepository.findByUsuarioId(userId, limit);
     } catch (error) {
       console.error('❌ Error al obtener notificaciones:', error);
       throw error;
@@ -238,14 +185,13 @@ class NotificationService {
 
   /**
    * Marcar notificación como leída
+   * @param {number} notificacionId - ID de la notificación
+   * @param {number} userId - ID del usuario
+   * @returns {Promise<boolean>} true si se marcó, false si no
    */
-  static async markAsRead(notificacionId, userId) {
+  async markAsRead(notificacionId, userId) {
     try {
-      await db.query(
-        `UPDATE notificaciones SET leida = 1 
-         WHERE id = ? AND usuario_id = ?`,
-        [notificacionId, userId]
-      );
+      return await notificacionRepository.markAsRead(notificacionId, userId);
     } catch (error) {
       console.error('❌ Error al marcar notificación como leída:', error);
       throw error;
@@ -254,19 +200,32 @@ class NotificationService {
 
   /**
    * Marcar todas las notificaciones como leídas
+   * @param {number} userId - ID del usuario
+   * @returns {Promise<number>} Número de notificaciones actualizadas
    */
-  static async markAllAsRead(userId) {
+  async markAllAsRead(userId) {
     try {
-      await db.query(
-        `UPDATE notificaciones SET leida = 1 
-         WHERE usuario_id = ? AND leida = 0`,
-        [userId]
-      );
+      return await notificacionRepository.markAllAsRead(userId);
     } catch (error) {
       console.error('❌ Error al marcar todas las notificaciones como leídas:', error);
       throw error;
     }
   }
+
+  /**
+   * Obtener cantidad de notificaciones no leídas
+   * @param {number} userId - ID del usuario
+   * @returns {Promise<number>} Cantidad de notificaciones no leídas
+   */
+  async getUnreadCount(userId) {
+    try {
+      const notificaciones = await notificacionRepository.findByUsuarioId(userId, 1000);
+      return notificaciones.filter(n => n.leida === 0 || n.leida === false).length;
+    } catch (error) {
+      console.error('❌ Error al obtener contador de notificaciones:', error);
+      throw error;
+    }
+  }
 }
 
-module.exports = NotificationService;
+module.exports = new NotificationService();
