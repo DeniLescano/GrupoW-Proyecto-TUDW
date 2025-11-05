@@ -320,6 +320,130 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cancelEditUserBtn.addEventListener('click', showViewMode);
     
+    // Cambiar rol de usuario
+    const changeRoleBtn = document.getElementById('change-role-btn');
+    const changeRoleModal = document.getElementById('change-role-modal');
+    const changeRoleForm = document.getElementById('change-role-form');
+    const changeRoleSelect = document.getElementById('change-role-select');
+    const changeRoleUserName = document.getElementById('change-role-user-name');
+    const changeRoleCurrent = document.getElementById('change-role-current');
+    const changeRoleUserId = document.getElementById('change-role-user-id');
+    const closeChangeRoleModalBtn = document.querySelector('.close-change-role-modal');
+    
+    if (changeRoleBtn) {
+        changeRoleBtn.addEventListener('click', () => {
+            // Obtener el usuario seleccionado desde el modal de detalles
+            const viewId = document.getElementById('view-id').textContent;
+            const selectedUser = allUsuarios.find(u => u.usuario_id == parseInt(viewId));
+            
+            if (!selectedUser) {
+                alert('No se pudo obtener la información del usuario');
+                return;
+            }
+            
+            // Verificar si es el usuario actual - prevenir auto-cambio de rol
+            const currentUser = window.auth.getUsuario();
+            if (currentUser && currentUser.usuario_id == selectedUser.usuario_id) {
+                alert('No puedes cambiar tu propio rol. Si necesitas hacerlo, contacta a otro administrador.');
+                return;
+            }
+            
+            changeRoleUserName.textContent = `${selectedUser.nombre} ${selectedUser.apellido} (${selectedUser.nombre_usuario})`;
+            changeRoleCurrent.textContent = getTipoUsuarioNombre(selectedUser.tipo_usuario);
+            changeRoleUserId.value = selectedUser.usuario_id;
+            changeRoleSelect.value = selectedUser.tipo_usuario;
+            
+            changeRoleModal.style.display = 'flex';
+            setTimeout(() => changeRoleModal.classList.add('show'), 10);
+        });
+    }
+    
+    if (closeChangeRoleModalBtn) {
+        closeChangeRoleModalBtn.addEventListener('click', () => {
+            changeRoleModal.classList.remove('show');
+            setTimeout(() => {
+                changeRoleModal.style.display = 'none';
+            }, 300);
+        });
+    }
+    
+    if (changeRoleForm) {
+        changeRoleForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = parseInt(changeRoleUserId.value);
+            const newTipoUsuario = parseInt(changeRoleSelect.value);
+            
+            const user = allUsuarios.find(u => u.usuario_id == id);
+            if (!user) {
+                alert('Error: Usuario no encontrado');
+                return;
+            }
+            
+            // Verificar si es el usuario actual
+            const currentUser = window.auth.getUsuario();
+            if (currentUser && currentUser.usuario_id == id) {
+                alert('No puedes cambiar tu propio rol. Si necesitas hacerlo, contacta a otro administrador.');
+                return;
+            }
+            
+            if (user.tipo_usuario == newTipoUsuario) {
+                alert('El usuario ya tiene ese rol asignado.');
+                return;
+            }
+            
+            if (!confirm(`¿Estás seguro de que quieres cambiar el rol de ${user.nombre} ${user.apellido} de "${getTipoUsuarioNombre(user.tipo_usuario)}" a "${getTipoUsuarioNombre(newTipoUsuario)}"?`)) {
+                return;
+            }
+            
+            try {
+                const userData = {
+                    nombre: user.nombre,
+                    apellido: user.apellido,
+                    nombre_usuario: user.nombre_usuario,
+                    tipo_usuario: newTipoUsuario,
+                    celular: user.celular || null,
+                    foto: user.foto || null,
+                    activo: user.activo
+                };
+                
+                const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al cambiar el rol');
+                }
+                
+                alert(`Rol cambiado exitosamente de "${getTipoUsuarioNombre(user.tipo_usuario)}" a "${getTipoUsuarioNombre(newTipoUsuario)}"`);
+                changeRoleModal.classList.remove('show');
+                setTimeout(() => {
+                    changeRoleModal.style.display = 'none';
+                }, 300);
+                detailsUserModal.classList.remove('show');
+                setTimeout(() => {
+                    detailsUserModal.style.display = 'none';
+                }, 300);
+                fetchUsuarios();
+            } catch (error) {
+                alert(`Error al cambiar el rol: ${error.message}`);
+                console.error('Error al cambiar rol:', error);
+            }
+        });
+    }
+    
+    window.addEventListener('click', (event) => {
+        if (event.target === changeRoleModal) {
+            changeRoleModal.classList.remove('show');
+            setTimeout(() => {
+                changeRoleModal.style.display = 'none';
+            }, 300);
+        }
+    });
+    
     addUserForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 

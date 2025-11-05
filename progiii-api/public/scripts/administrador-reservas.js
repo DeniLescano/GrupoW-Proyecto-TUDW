@@ -131,8 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Manejar respuesta estandarizada { success: true, data: [...] }
             allReservas = (data.success && data.data) ? data.data : data;
             renderReservas(allReservas);
-            // Sincronizar anchos de columnas después de renderizar
+            // Sincronizar anchos de columnas después de renderizar (múltiples intentos para asegurar sincronización)
             setTimeout(() => syncTableColumnWidths(), 100);
+            setTimeout(() => syncTableColumnWidths(), 250);
+            setTimeout(() => syncTableColumnWidths(), 500);
         } catch (error) {
             console.error('Error:', error);
             const errorMessageRow = `<tr><td colspan="10" style="color: red; text-align: center;">Error: ${error.message}</td></tr>`;
@@ -142,23 +144,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function syncTableColumnWidths() {
-        const activeTable = document.querySelector('.table-container:first-of-type .usuarios-table');
-        const inactiveTable = document.querySelector('.table-container:nth-of-type(2) .usuarios-table');
+        // Buscar las tablas de reservas activas e inactivas
+        const activasBody = document.getElementById('reservas-activas-body');
+        const inactivasBody = document.getElementById('reservas-inactivas-body');
         
-        if (activeTable && inactiveTable) {
-            const activeHeaders = activeTable.querySelectorAll('thead th');
-            const inactiveHeaders = inactiveTable.querySelectorAll('thead th');
-            
-            if (activeHeaders.length === inactiveHeaders.length) {
-                activeHeaders.forEach((th, index) => {
-                    if (inactiveHeaders[index]) {
-                        const width = th.offsetWidth;
-                        inactiveHeaders[index].style.width = width + 'px';
-                        inactiveHeaders[index].style.minWidth = width + 'px';
-                        inactiveHeaders[index].style.maxWidth = width + 'px';
-                    }
-                });
+        if (!activasBody || !inactivasBody) return;
+        
+        const activasTable = activasBody.closest('table');
+        const inactivasTable = inactivasBody.closest('table');
+        
+        if (!activasTable || !inactivasTable) return;
+        
+        const activasHeaders = activasTable.querySelectorAll('thead th');
+        const inactivasHeaders = inactivasTable.querySelectorAll('thead th');
+        
+        if (activasHeaders.length !== inactivasHeaders.length) return;
+        
+        activasHeaders.forEach((header, index) => {
+            if (inactivasHeaders[index]) {
+                const width = header.offsetWidth || header.clientWidth;
+                if (width > 0) {
+                    inactivasHeaders[index].style.width = `${width}px`;
+                    inactivasHeaders[index].style.minWidth = `${width}px`;
+                    inactivasHeaders[index].style.maxWidth = `${width}px`;
+                }
             }
+        });
+        
+        // También sincronizar las celdas del cuerpo para mantener consistencia
+        const activasRows = activasBody.querySelectorAll('tr');
+        const inactivasRows = inactivasBody.querySelectorAll('tr');
+        
+        if (activasRows.length > 0 && inactivasRows.length > 0) {
+            const activasCells = activasRows[0].querySelectorAll('td');
+            const inactivasCells = inactivasRows[0].querySelectorAll('td');
+            
+            activasCells.forEach((cell, index) => {
+                if (inactivasCells[index]) {
+                    const width = cell.offsetWidth || cell.clientWidth;
+                    if (width > 0) {
+                        inactivasCells[index].style.width = `${width}px`;
+                        inactivasCells[index].style.minWidth = `${width}px`;
+                    }
+                }
+            });
         }
     }
 
@@ -179,8 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
         reservasActivas.forEach(reserva => createRow(reserva, activosBody));
         reservasInactivas.forEach(reserva => createRow(reserva, inactivosBody));
         
-        // Sincronizar anchos después de renderizar
+        // Sincronizar anchos después de renderizar (con múltiples delays para asegurar que el DOM se actualizó completamente)
         setTimeout(() => syncTableColumnWidths(), 50);
+        setTimeout(() => syncTableColumnWidths(), 150);
+        setTimeout(() => syncTableColumnWidths(), 300);
     }
 
     function createRow(reserva, tbody) {
@@ -400,7 +431,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.message || errorData.error || 'Error al guardar la reserva');
             }
 
-            alert(isEditMode ? 'Reserva actualizada correctamente!' : 'Reserva creada correctamente!');
+            const data = await response.json();
+            const responseData = data.success && data.data ? data.data : data;
+            
+            // Mostrar notificación sobre el envío de email si existe
+            let alertMessage = isEditMode ? 'Reserva actualizada correctamente!' : 'Reserva creada correctamente!';
+            
+            if (responseData.emailInfo) {
+                const emailInfo = responseData.emailInfo;
+                if (emailInfo.enviado) {
+                    const tipoEmail = emailInfo.tipo === 'confirmación' ? 'confirmación' : 'cancelación';
+                    let emailMessage = `\n\n📧 Email de ${tipoEmail} enviado a: ${emailInfo.email}`;
+                    
+                    if (emailInfo.previewUrl) {
+                        emailMessage += `\n\n🔗 Preview URL (modo desarrollo):\n${emailInfo.previewUrl}`;
+                    }
+                    
+                    alertMessage += emailMessage;
+                } else {
+                    alertMessage += `\n\n⚠️ No se pudo enviar el email de ${emailInfo.tipo} a: ${emailInfo.email}\nError: ${emailInfo.error || 'Error desconocido'}`;
+                }
+            }
+            
+            alert(alertMessage);
             addModal.classList.remove('show');
             setTimeout(() => {
                 addModal.style.display = 'none';
@@ -444,7 +497,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorData.error || errorData.message || 'Error al reactivar la reserva');
                 }
 
-                alert('Reserva reactivada correctamente!');
+                const data = await response.json();
+                const responseData = data.success && data.data ? data.data : data;
+                
+                let alertMessage = 'Reserva reactivada correctamente!';
+                if (responseData.emailInfo) {
+                    const emailInfo = responseData.emailInfo;
+                    if (emailInfo.enviado) {
+                        alertMessage += `\n\n📧 Email de ${emailInfo.tipo} enviado a: ${emailInfo.email}`;
+                        if (emailInfo.previewUrl) {
+                            alertMessage += `\n\n🔗 Preview URL (modo desarrollo):\n${emailInfo.previewUrl}`;
+                        }
+                    } else {
+                        alertMessage += `\n\n⚠️ No se pudo enviar el email a: ${emailInfo.email}`;
+                    }
+                }
+                
+                alert(alertMessage);
             } else {
                 // Desactivar: soft delete
                 const response = await window.auth.fetchWithAuth(`${API_URL}/${id}`, {
@@ -456,7 +525,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorData.error || errorData.message || 'Error al desactivar la reserva');
                 }
 
-                alert('Reserva desactivada correctamente!');
+                const data = await response.json();
+                const responseData = data.success && data.data ? data.data : data;
+                
+                let alertMessage = 'Reserva desactivada correctamente!';
+                if (responseData.emailInfo) {
+                    const emailInfo = responseData.emailInfo;
+                    if (emailInfo.enviado) {
+                        alertMessage += `\n\n📧 Email de ${emailInfo.tipo} enviado a: ${emailInfo.email}`;
+                        if (emailInfo.previewUrl) {
+                            alertMessage += `\n\n🔗 Preview URL (modo desarrollo):\n${emailInfo.previewUrl}`;
+                        }
+                    } else {
+                        alertMessage += `\n\n⚠️ No se pudo enviar el email de cancelación a: ${emailInfo.email}\nError: ${emailInfo.error || 'Error desconocido'}`;
+                    }
+                }
+                
+                alert(alertMessage);
             }
 
             detailsModal.classList.remove('show');
@@ -524,6 +609,9 @@ document.addEventListener('DOMContentLoaded', () => {
                    (r.tematica && r.tematica.toLowerCase().includes(filterText));
         });
         renderReservas(filtered);
+        // Sincronizar anchos después de filtrar (múltiples intentos)
+        setTimeout(() => syncTableColumnWidths(), 100);
+        setTimeout(() => syncTableColumnWidths(), 250);
     };
 
     // Funciones para comentarios

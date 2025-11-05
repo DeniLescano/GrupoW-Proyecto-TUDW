@@ -726,10 +726,18 @@ button:hover {
 }
 
 /* Sincronizar anchos de columnas entre tablas activas e inactivas */
-.table-container:nth-of-type(2) .usuarios-table {
+.table-container:nth-of-type(2) .usuarios-table,
+.table-container:last-of-type .usuarios-table {
     width: 100%;
     min-width: 800px;
     table-layout: fixed;
+}
+
+/* Asegurar que ambas tablas tengan el mismo estilo de encabezados */
+.table-container .usuarios-table thead th {
+    height: 60px !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
 }
 
 .usuarios-table th {

@@ -1,6 +1,7 @@
 const reservaService = require('../services/reservaService');
 const notificationService = require('../services/notificationService');
 const emailService = require('../services/emailService');
+const comentarioService = require('../services/comentarioService');
 const { successResponse, errorResponse } = require('../utils/responseFormatter');
 
 /**
@@ -155,6 +156,7 @@ class ReservaController {
       const reservaCompleta = await reservaService.getReservaById(id);
       
       // Si se confirmó la reserva, enviar notificación y email
+      let emailInfo = null;
       if (estadoAnterior === 'confirmada') {
         notificationService.notifyReservaConfirmed(id).catch(err => {
           console.error('Error al enviar notificación de confirmación:', err);
@@ -162,34 +164,62 @@ class ReservaController {
         
         // Enviar email de confirmación
         if (reservaCompleta && reservaCompleta.nombre_usuario) {
-          emailService.enviarConfirmacionReserva(reservaCompleta.nombre_usuario, {
-            fecha_reserva: reservaCompleta.fecha_reserva,
-            salon_titulo: reservaCompleta.salon_titulo || reservaCompleta.titulo,
-            salon_direccion: reservaCompleta.salon_direccion || reservaCompleta.direccion,
-            hora_desde: reservaCompleta.hora_desde,
-            hora_hasta: reservaCompleta.hora_hasta,
-            tematica: reservaCompleta.tematica,
-            importe_total: reservaCompleta.importe_total,
-            servicios: reservaCompleta.servicios || []
-          }).catch(err => {
+          try {
+            const emailResult = await emailService.enviarConfirmacionReserva(reservaCompleta.nombre_usuario, {
+              fecha_reserva: reservaCompleta.fecha_reserva,
+              salon_titulo: reservaCompleta.salon_titulo || reservaCompleta.titulo,
+              salon_direccion: reservaCompleta.salon_direccion || reservaCompleta.direccion,
+              hora_desde: reservaCompleta.hora_desde,
+              hora_hasta: reservaCompleta.hora_hasta,
+              tematica: reservaCompleta.tematica,
+              importe_total: reservaCompleta.importe_total,
+              servicios: reservaCompleta.servicios || []
+            });
+            emailInfo = {
+              enviado: true,
+              email: reservaCompleta.nombre_usuario,
+              tipo: 'confirmación',
+              previewUrl: emailResult.previewUrl || null
+            };
+          } catch (err) {
             console.error('Error al enviar email de confirmación:', err);
-          });
+            emailInfo = {
+              enviado: false,
+              email: reservaCompleta.nombre_usuario,
+              tipo: 'confirmación',
+              error: err.message
+            };
+          }
         }
       }
       
       // Si se canceló la reserva (activo = 0), enviar email de cancelación
-      if (activoAnterior === 0 || activoAnterior === false) {
+      if ((activoAnterior === 0 || activoAnterior === false) && !emailInfo) {
         if (reservaCompleta && reservaCompleta.nombre_usuario) {
-          emailService.enviarCancelacionReserva(reservaCompleta.nombre_usuario, {
-            fecha_reserva: reservaCompleta.fecha_reserva,
-            salon_titulo: reservaCompleta.salon_titulo || reservaCompleta.titulo,
-            salon_direccion: reservaCompleta.salon_direccion || reservaCompleta.direccion,
-            hora_desde: reservaCompleta.hora_desde,
-            hora_hasta: reservaCompleta.hora_hasta,
-            importe_total: reservaCompleta.importe_total
-          }).catch(err => {
+          try {
+            const emailResult = await emailService.enviarCancelacionReserva(reservaCompleta.nombre_usuario, {
+              fecha_reserva: reservaCompleta.fecha_reserva,
+              salon_titulo: reservaCompleta.salon_titulo || reservaCompleta.titulo,
+              salon_direccion: reservaCompleta.salon_direccion || reservaCompleta.direccion,
+              hora_desde: reservaCompleta.hora_desde,
+              hora_hasta: reservaCompleta.hora_hasta,
+              importe_total: reservaCompleta.importe_total
+            });
+            emailInfo = {
+              enviado: true,
+              email: reservaCompleta.nombre_usuario,
+              tipo: 'cancelación',
+              previewUrl: emailResult.previewUrl || null
+            };
+          } catch (err) {
             console.error('Error al enviar email de cancelación:', err);
-          });
+            emailInfo = {
+              enviado: false,
+              email: reservaCompleta.nombre_usuario,
+              tipo: 'cancelación',
+              error: err.message
+            };
+          }
         }
       }
       
@@ -201,7 +231,12 @@ class ReservaController {
         });
       }
       
-      res.json(successResponse(reserva, 'Reserva actualizada correctamente'));
+      const responseData = { reserva };
+      if (emailInfo) {
+        responseData.emailInfo = emailInfo;
+      }
+      
+      res.json(successResponse(responseData, 'Reserva actualizada correctamente'));
     } catch (error) {
       if (error.message === 'Reserva no encontrada' || 
           error.message === 'Reserva no encontrada para actualizar') {
@@ -238,22 +273,42 @@ class ReservaController {
       });
       
       // Enviar email de confirmación
+      let emailInfo = null;
       if (reserva && reserva.nombre_usuario) {
-        emailService.enviarConfirmacionReserva(reserva.nombre_usuario, {
-          fecha_reserva: reserva.fecha_reserva,
-          salon_titulo: reserva.salon_titulo || reserva.titulo,
-          salon_direccion: reserva.salon_direccion || reserva.direccion,
-          hora_desde: reserva.hora_desde,
-          hora_hasta: reserva.hora_hasta,
-          tematica: reserva.tematica,
-          importe_total: reserva.importe_total,
-          servicios: reserva.servicios || []
-        }).catch(err => {
+        try {
+          const emailResult = await emailService.enviarConfirmacionReserva(reserva.nombre_usuario, {
+            fecha_reserva: reserva.fecha_reserva,
+            salon_titulo: reserva.salon_titulo || reserva.titulo,
+            salon_direccion: reserva.salon_direccion || reserva.direccion,
+            hora_desde: reserva.hora_desde,
+            hora_hasta: reserva.hora_hasta,
+            tematica: reserva.tematica,
+            importe_total: reserva.importe_total,
+            servicios: reserva.servicios || []
+          });
+          emailInfo = {
+            enviado: true,
+            email: reserva.nombre_usuario,
+            tipo: 'confirmación',
+            previewUrl: emailResult.previewUrl || null
+          };
+        } catch (err) {
           console.error('Error al enviar email de confirmación:', err);
-        });
+          emailInfo = {
+            enviado: false,
+            email: reserva.nombre_usuario,
+            tipo: 'confirmación',
+            error: err.message
+          };
+        }
       }
       
-      res.json(successResponse(reserva, 'Reserva confirmada exitosamente'));
+      const responseData = { reserva };
+      if (emailInfo) {
+        responseData.emailInfo = emailInfo;
+      }
+      
+      res.json(successResponse(responseData, 'Reserva confirmada exitosamente'));
     } catch (error) {
       if (error.message === 'Reserva no encontrada' || 
           error.message === 'Reserva no encontrada para confirmar') {
@@ -293,20 +348,36 @@ class ReservaController {
       }
       
       // Enviar email de cancelación
+      let emailInfo = null;
       if (reservaCompleta && reservaCompleta.nombre_usuario) {
-        emailService.enviarCancelacionReserva(reservaCompleta.nombre_usuario, {
-          fecha_reserva: reservaCompleta.fecha_reserva,
-          salon_titulo: reservaCompleta.salon_titulo || reservaCompleta.titulo,
-          salon_direccion: reservaCompleta.salon_direccion || reservaCompleta.direccion,
-          hora_desde: reservaCompleta.hora_desde,
-          hora_hasta: reservaCompleta.hora_hasta,
-          importe_total: reservaCompleta.importe_total
-        }).catch(err => {
+        try {
+          const emailResult = await emailService.enviarCancelacionReserva(reservaCompleta.nombre_usuario, {
+            fecha_reserva: reservaCompleta.fecha_reserva,
+            salon_titulo: reservaCompleta.salon_titulo || reservaCompleta.titulo,
+            salon_direccion: reservaCompleta.salon_direccion || reservaCompleta.direccion,
+            hora_desde: reservaCompleta.hora_desde,
+            hora_hasta: reservaCompleta.hora_hasta,
+            importe_total: reservaCompleta.importe_total
+          });
+          emailInfo = {
+            enviado: true,
+            email: reservaCompleta.nombre_usuario,
+            tipo: 'cancelación',
+            previewUrl: emailResult.previewUrl || null
+          };
+        } catch (err) {
           console.error('Error al enviar email de cancelación:', err);
-        });
+          emailInfo = {
+            enviado: false,
+            email: reservaCompleta.nombre_usuario,
+            tipo: 'cancelación',
+            error: err.message
+          };
+        }
       }
       
-      res.json(successResponse(null, 'Reserva eliminada correctamente (soft delete)'));
+      const responseData = { emailInfo };
+      res.json(successResponse(responseData, 'Reserva eliminada correctamente (soft delete)'));
     } catch (error) {
       if (error.message === 'Reserva no encontrada para eliminar') {
         const { response, statusCode } = errorResponse(error.message, null, 404);
@@ -315,6 +386,102 @@ class ReservaController {
       
       console.error('Error al eliminar reserva:', error);
       const { response, statusCode } = errorResponse('Error al eliminar la reserva', error.message, 500);
+      res.status(statusCode).json(response);
+    }
+  }
+
+  /**
+   * Cancelar reserva (soft delete) - Solo clientes pueden cancelar sus propias reservas
+   * DELETE /api/v1/reservas/:id/cancelar
+   */
+  async cancelar(req, res) {
+    try {
+      const { id } = req.params;
+      const { motivo_cancelacion } = req.body;
+      const usuarioId = req.user.usuario_id;
+      
+      // Verificar que la reserva existe y pertenece al usuario
+      const reserva = await reservaService.getReservaById(id);
+      if (!reserva) {
+        const { response, statusCode } = errorResponse('Reserva no encontrada', null, 404);
+        return res.status(statusCode).json(response);
+      }
+      
+      // Verificar que la reserva pertenece al usuario autenticado
+      if (reserva.usuario_id !== usuarioId) {
+        const { response, statusCode } = errorResponse('No tienes permisos para cancelar esta reserva', null, 403);
+        return res.status(statusCode).json(response);
+      }
+      
+      // Verificar que la reserva está activa
+      if (reserva.activo === 0 || reserva.activo === false) {
+        const { response, statusCode } = errorResponse('La reserva ya está cancelada', null, 400);
+        return res.status(statusCode).json(response);
+      }
+      
+      // Validar motivo
+      if (!motivo_cancelacion || motivo_cancelacion.trim().length === 0) {
+        const { response, statusCode } = errorResponse('El motivo de cancelación es obligatorio', null, 400);
+        return res.status(statusCode).json(response);
+      }
+      
+      // Soft delete de la reserva
+      await reservaService.deleteReserva(id);
+      
+      // Guardar motivo como comentario
+      try {
+        await comentarioService.createComentario({
+          reserva_id: parseInt(id),
+          usuario_id: usuarioId,
+          comentario: `[CANCELACIÓN POR CLIENTE] Motivo: ${motivo_cancelacion.trim()}`
+        });
+      } catch (commentError) {
+        console.error('Error al guardar comentario de cancelación:', commentError);
+        // No fallar si no se puede guardar el comentario
+      }
+      
+      // Obtener datos completos de la reserva para el email
+      const reservaCompleta = await reservaService.getReservaById(id, true);
+      
+      // Enviar email de cancelación
+      let emailInfo = null;
+      if (reservaCompleta && reservaCompleta.nombre_usuario) {
+        try {
+          const emailResult = await emailService.enviarCancelacionReserva(reservaCompleta.nombre_usuario, {
+            fecha_reserva: reservaCompleta.fecha_reserva,
+            salon_titulo: reservaCompleta.salon_titulo || reservaCompleta.titulo,
+            salon_direccion: reservaCompleta.salon_direccion || reservaCompleta.direccion,
+            hora_desde: reservaCompleta.hora_desde,
+            hora_hasta: reservaCompleta.hora_hasta,
+            importe_total: reservaCompleta.importe_total
+          });
+          emailInfo = {
+            enviado: true,
+            email: reservaCompleta.nombre_usuario,
+            tipo: 'cancelación',
+            previewUrl: emailResult.previewUrl || null
+          };
+        } catch (err) {
+          console.error('Error al enviar email de cancelación:', err);
+          emailInfo = {
+            enviado: false,
+            email: reservaCompleta.nombre_usuario,
+            tipo: 'cancelación',
+            error: err.message
+          };
+        }
+      }
+      
+      const responseData = { emailInfo };
+      res.json(successResponse(responseData, 'Reserva cancelada exitosamente'));
+    } catch (error) {
+      if (error.message === 'Reserva no encontrada') {
+        const { response, statusCode } = errorResponse(error.message, null, 404);
+        return res.status(statusCode).json(response);
+      }
+      
+      console.error('Error al cancelar reserva:', error);
+      const { response, statusCode } = errorResponse('Error al cancelar la reserva', error.message, 500);
       res.status(statusCode).json(response);
     }
   }

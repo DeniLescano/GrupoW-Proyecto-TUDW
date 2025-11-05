@@ -1,22 +1,98 @@
 # 📚 Guía Completa de la Aplicación - Sistema de Reservas PROGIII
 
-Esta guía detalla la implementación de todas las funcionalidades según los requisitos del Trabajo Final Integrador.
+Esta guía detalla la implementación de todas las funcionalidades según los requisitos del Trabajo Final Integrador, incluyendo las funcionalidades extras implementadas.
+
+**Última actualización:** Incluye registro de clientes, envío de emails automáticos, sistema de comentarios y generación de PDF en backend.
 
 ---
 
 ## 📋 ÍNDICE
 
-1. [Roles y Permisos](#roles-y-permisos)
-2. [Autenticación JWT](#autenticación-jwt)
-3. [Autorización por Roles](#autorización-por-roles)
-4. [BREAD Completo](#bread-completo)
-5. [Notificaciones Automáticas](#notificaciones-automáticas)
-6. [Estadísticas y Reportes](#estadísticas-y-reportes)
-7. [Validaciones](#validaciones)
-8. [Documentación Swagger](#documentación-swagger)
-9. [Manejo de Errores](#manejo-de-errores)
-10. [Modelo de Datos](#modelo-de-datos)
-11. [Frontend Público](#frontend-público)
+1. [Instalación y Configuración](#-instalación-y-configuración)
+2. [Roles y Permisos](#roles-y-permisos)
+3. [Autenticación JWT y Registro](#autenticación-jwt)
+4. [Autorización por Roles](#autorización-por-roles)
+5. [BREAD Completo](#bread-completo)
+6. [Notificaciones Automáticas](#notificaciones-automáticas)
+7. [Envío de Emails](#-envío-de-emails-automáticos-nuevo)
+8. [Sistema de Comentarios](#-sistema-de-comentariosobservaciones-nuevo)
+9. [Estadísticas y Reportes](#estadísticas-y-reportes)
+10. [Validaciones](#validaciones)
+11. [Documentación Swagger](#documentación-swagger)
+12. [Manejo de Errores](#manejo-de-errores)
+13. [Modelo de Datos](#modelo-de-datos)
+14. [Frontend Público](#frontend-público)
+
+---
+
+## 🚀 INSTALACIÓN Y CONFIGURACIÓN
+
+### 1. Instalar Dependencias NPM
+```bash
+cd progiii-api
+npm install
+```
+
+**Dependencias principales:**
+- `express` - Framework web
+- `mysql2` - Cliente MySQL
+- `jsonwebtoken` - Autenticación JWT
+- `bcryptjs` - Hash de contraseñas
+- `express-validator` - Validaciones
+- `swagger-jsdoc` y `swagger-ui-express` - Documentación API
+- `express-rate-limit` - Rate limiting
+- `node-cache` - Caché de respuestas
+- `nodemailer` - Envío de emails (nuevo)
+- `pdfkit` - Generación de PDFs en backend (nuevo)
+
+### 2. Configurar Base de Datos
+Ejecutar los scripts SQL en orden:
+1. `database/migrations/001_initial_schema.sql` - Estructura principal
+2. `database/migrations/002_stored_procedures.sql` - Stored procedures
+3. `src/database/create_notifications_table.sql` - Tabla notificaciones
+4. `scripts/create_comentarios_table.sql` - Tabla comentarios (nuevo)
+
+### 3. Configurar Variables de Entorno
+Crear archivo `.env` en la raíz del proyecto:
+```env
+# Base de Datos
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=tu_password
+DB_NAME=reservas
+
+# JWT
+JWT_SECRET=tu_secret_key_super_seguro_cambiar_en_produccion
+
+# Servidor
+PORT=3007
+
+# Email (solo para producción)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu_email@gmail.com
+SMTP_PASS=tu_password_app
+SMTP_FROM="Sistema de Reservas <tu_email@gmail.com>"
+```
+
+**Nota**: En desarrollo, el sistema usa ethereal para emails de prueba (no requiere configuración).
+
+### 4. Iniciar el Servidor
+```bash
+npm start
+# o para desarrollo con auto-reload:
+npm run dev
+```
+
+El servidor estará disponible en `http://localhost:3007`
+
+### 5. Acceder a la Aplicación
+- Frontend: `http://localhost:3007/`
+- API Docs (Swagger): `http://localhost:3007/api-docs`
+- Login: `http://localhost:3007/login.html`
+- Registro: `http://localhost:3007/registro.html`
+
+Ver `CREDENCIALES.md` para credenciales de prueba.
 
 ---
 
@@ -29,7 +105,7 @@ Esta guía detalla la implementación de todas las funcionalidades según los re
 **1. Iniciar Sesión (Autenticación)**
 - **Archivos:**
   - Backend: `src/controllers/authController.js` → función `login`
-  - Backend: `src/routes/auth.js` → ruta `POST /api/auth/login`
+  - Backend: `src/routes/auth.js` → ruta `POST /api/v1/auth/login`
   - Frontend: `public/login.html`
   - Frontend: `public/scripts/auth.js` → función de login
 - **Funcionamiento:**
@@ -39,6 +115,24 @@ Esta guía detalla la implementación de todas las funcionalidades según los re
   - Se genera token JWT con información del usuario
   - El token se almacena en `localStorage` del frontend
   - El usuario es redirigido según su rol
+
+**1.1. Registro de Clientes (Nuevo)**
+- **Archivos:**
+  - Backend: `src/controllers/authController.js` → función `register`
+  - Backend: `src/services/authService.js` → método `register`
+  - Backend: `src/routes/auth.js` → ruta `POST /api/v1/auth/register`
+  - Backend: `src/validators/authValidator.js` → `registerValidator`
+  - Frontend: `public/registro.html`
+- **Funcionamiento:**
+  - Los clientes pueden registrarse desde la página pública `registro.html`
+  - El formulario requiere: nombre, apellido, email (nombre_usuario), contraseña (mínimo 6 caracteres), celular (opcional)
+  - El backend valida los datos con express-validator
+  - Verifica que el email no esté registrado
+  - Hash de contraseña con bcrypt (10 rounds)
+  - Crea usuario con `tipo_usuario = 1` (cliente) y `activo = 1`
+  - Genera token JWT automáticamente
+  - Redirige al panel de cliente después del registro exitoso
+- **Enlace:** Disponible desde `login.html` con enlace "Regístrate aquí"
 
 **2. Reservas - Crear**
 - **Archivos:**
@@ -273,17 +367,26 @@ Esta guía detalla la implementación de todas las funcionalidades según los re
 **8. Reportes de Reservas en PDF y CSV**
 - **Archivos:**
   - Backend: `src/controllers/reportesController.js` → funciones `reporteReservas`, `exportarReservasCSV`
+  - Backend: `src/services/reporteService.js` → método `generarPDF` (nuevo)
   - Backend: `src/routes/reportes.js` → rutas para reportes
   - Frontend: `public/administrador/reportes-reservas.html`
   - Frontend: `public/scripts/reportes-reservas.js`
 - **Funcionamiento:**
-  - **PDF**: Se genera en el frontend usando `jsPDF` y `jspdf-autotable`
-    - Muestra: ID reserva, fecha, cliente, salón, turno, servicios, importes
-    - Se puede filtrar por rango de fechas y salón
+  - **PDF**: Se genera en el backend usando `pdfkit` (implementación completa)
+    - Endpoint: `GET /api/v1/reportes/reservas?formato=PDF&fecha_desde=&fecha_hasta=`
+    - Modo horizontal (landscape) para mejor visualización de tablas
+    - Incluye: ID reserva, fecha, cliente, salón, turno, temática, servicios, importes, estado
+    - Encabezados repetidos en nuevas páginas
+    - Formato profesional con colores y estilos
+    - Headers: `Content-Type: application/pdf` y `Content-Disposition: attachment`
+    - También disponible en frontend (jsPDF) para compatibilidad
   - **CSV**: Se genera en el backend y se descarga directamente
-    - Endpoint: `GET /api/reportes/reservas/csv?fecha_desde=&fecha_hasta=&idSalon=`
-    - Headers: `Content-Type: text/csv` y `Content-Disposition: attachment`
+    - Endpoint: `GET /api/v1/reportes/reservas/csv?fecha_desde=&fecha_hasta=`
+    - Headers: `Content-Type: text/csv;charset=utf-8` y `Content-Disposition: attachment`
+    - Incluye BOM UTF-8 para compatibilidad con Excel
+    - Escape correcto de comillas y caracteres especiales
   - Ambos usan el stored procedure `sp_reservas_detalladas` para obtener datos
+  - Endpoint unificado: `GET /api/v1/reportes/reservas?formato=PDF|CSV|JSON`
 
 **9. Recepción de Notificaciones Automáticas**
 - **Archivos:**
@@ -293,6 +396,57 @@ Esta guía detalla la implementación de todas las funcionalidades según los re
   - Cuando se crea una nueva reserva, todos los administradores y empleados reciben notificación
   - Tipo: `nueva_reserva`
   - Contiene información del cliente y salón reservado
+
+**10. Envío de Emails Automáticos (Nuevo)**
+- **Archivos:**
+  - Backend: `src/services/emailService.js` → servicio completo de emails
+  - Backend: `src/controllers/reservaController.js` → integrado en `confirmar` y `edit`
+  - Librería: `nodemailer` (agregada a package.json)
+- **Funcionamiento:**
+  - **Email de Confirmación**: Se envía automáticamente cuando un administrador confirma una reserva
+    - Template HTML profesional con estilos
+    - Incluye: fecha, salón, dirección, horario, temática, servicios, importe total
+    - Se envía al email del cliente (`nombre_usuario`)
+  - **Email de Cancelación**: Se envía automáticamente cuando se cancela una reserva (soft delete)
+    - Template HTML con estilos diferenciados (rojo)
+    - Incluye: fecha, salón, dirección, horario, importe
+    - Notifica al cliente sobre la cancelación
+- **Configuración:**
+  - **Desarrollo**: Usa nodemailer con ethereal (emails de prueba)
+    - En consola se muestra la URL de preview del email
+    - No requiere configuración adicional
+  - **Producción**: Configurar variables de entorno en `.env`:
+    ```env
+    SMTP_HOST=smtp.gmail.com
+    SMTP_PORT=587
+    SMTP_USER=tu_email@gmail.com
+    SMTP_PASS=tu_password_app
+    SMTP_FROM="Sistema de Reservas <tu_email@gmail.com>"
+    ```
+
+**11. Sistema de Comentarios/Observaciones (Nuevo)**
+- **Archivos:**
+  - Backend: `src/repositories/comentarioRepository.js` → acceso a datos
+  - Backend: `src/services/comentarioService.js` → lógica de negocio
+  - Backend: `src/controllers/comentarioController.js` → controlador HTTP
+  - Backend: `src/routes/comentarios.js` → rutas REST
+  - Frontend: `public/administrador/reservas.html` → sección de comentarios en modal
+  - Frontend: `public/scripts/administrador-reservas.js` → funciones de comentarios
+  - Base de Datos: `scripts/create_comentarios_table.sql` → script SQL
+- **Funcionamiento:**
+  - **Tabla**: `comentarios_reservas` con campos: `comentario_id`, `reserva_id`, `usuario_id`, `comentario`, `creado`, `modificado`
+  - **Permisos**: Solo administradores pueden agregar comentarios
+  - **Endpoints**:
+    - `GET /api/v1/reservas/:reservaId/comentarios` → Obtener comentarios de una reserva (admin/empleado)
+    - `POST /api/v1/reservas/:reservaId/comentarios` → Crear comentario (solo admin)
+    - `PUT /api/v1/comentarios/:id` → Actualizar comentario (solo el autor)
+    - `DELETE /api/v1/comentarios/:id` → Eliminar comentario (solo el autor)
+  - **Frontend**:
+    - Sección de comentarios visible en el modal de detalles de reserva
+    - Lista de comentarios con información del autor y fecha
+    - Formulario para agregar nuevo comentario
+    - Validación: máximo 1000 caracteres
+  - **Uso típico**: "Pago 50% de la reserva", "Cliente solicitó cambio de fecha", etc.
 
 ---
 
@@ -310,7 +464,7 @@ Esta guía detalla la implementación de todas las funcionalidades según los re
   - Si es inválido, retorna 401 o 403
 
 **Generación de Token:**
-- **Archivo:** `src/controllers/authController.js` → función `login`
+- **Archivo:** `src/controllers/authController.js` → funciones `login` y `register`
 - **Librería:** `jsonwebtoken`
 - **Payload del token:**
   ```javascript
@@ -323,6 +477,7 @@ Esta guía detalla la implementación de todas las funcionalidades según los re
   }
   ```
 - **Expiración:** 24 horas
+- **Registro:** También genera token automáticamente después del registro exitoso
 
 **Frontend:**
 - **Archivo:** `public/scripts/auth.js`
@@ -335,11 +490,13 @@ Esta guía detalla la implementación de todas las funcionalidades según los re
 
 **Rutas Protegidas:**
 - Todas las rutas excepto:
-  - `POST /api/auth/login` (pública)
-  - `GET /api/salones` (pública, solo activos)
-  - `GET /api/servicios` (pública, solo activos)
-  - `GET /api/turnos` (pública, solo activos)
+  - `POST /api/v1/auth/login` (pública)
+  - `POST /api/v1/auth/register` (pública - registro de clientes)
+  - `GET /api/v1/salones` (pública, solo activos)
+  - `GET /api/v1/servicios` (pública, solo activos)
+  - `GET /api/v1/turnos` (pública, solo activos)
 - Resto de rutas requieren token válido
+- Mantiene compatibilidad con rutas antiguas (`/api/auth/login`, etc.)
 
 ---
 
@@ -493,6 +650,152 @@ router.get('/:id', authenticateToken, controller.read);
 
 ---
 
+## 📧 ENVÍO DE EMAILS AUTOMÁTICOS
+
+### **Implementación:**
+
+**Servicio de Emails:**
+- **Archivo:** `src/services/emailService.js`
+- **Librería:** `nodemailer` (agregada a package.json)
+- **Funcionamiento:**
+  - En desarrollo: usa nodemailer con ethereal (emails de prueba)
+  - En producción: configuración SMTP mediante variables de entorno
+  - Templates HTML profesionales con estilos CSS inline
+
+**Emails Automáticos:**
+
+**1. Email de Confirmación de Reserva:**
+- **Trigger:** Cuando un administrador confirma una reserva
+- **Archivo:** `src/controllers/reservaController.js` → función `confirmar` y `edit`
+- **Funcionamiento:**
+  - Se llama automáticamente cuando se cambia el estado de una reserva a `'confirmada'`
+  - Se envía al email del cliente (`nombre_usuario`)
+  - Template HTML con diseño profesional (verde/azul)
+  - Incluye: fecha, salón, dirección, horario, temática, servicios, importe total
+  - Mensaje: "Reserva Confirmada" con detalles completos
+
+**2. Email de Cancelación de Reserva:**
+- **Trigger:** Cuando se cancela una reserva (soft delete - `activo = 0`)
+- **Archivo:** `src/controllers/reservaController.js` → función `delete` y `edit`
+- **Funcionamiento:**
+  - Se llama automáticamente cuando se desactiva una reserva
+  - Se envía al email del cliente (`nombre_usuario`)
+  - Template HTML con diseño diferenciado (rojo)
+  - Incluye: fecha, salón, dirección, horario, importe
+  - Mensaje: "Reserva Cancelada" con detalles de la reserva cancelada
+
+**Configuración:**
+
+**Desarrollo (Ethereal):**
+- No requiere configuración adicional
+- Crea cuenta de prueba automáticamente
+- En consola del servidor se muestra la URL de preview del email
+- Ejemplo: `https://ethereal.email/message/...`
+
+**Producción (SMTP):**
+- Configurar variables de entorno en `.env`:
+  ```env
+  SMTP_HOST=smtp.gmail.com
+  SMTP_PORT=587
+  SMTP_USER=tu_email@gmail.com
+  SMTP_PASS=tu_password_app
+  SMTP_FROM="Sistema de Reservas <tu_email@gmail.com>"
+  ```
+- Para Gmail, usar contraseña de aplicación (no la contraseña normal)
+- Soporta otros proveedores SMTP (Outlook, SendGrid, etc.)
+
+**Integración:**
+- Se integra automáticamente en `reservaController.js`
+- No bloquea la respuesta HTTP (se envía en background)
+- Errores se registran en consola pero no afectan la respuesta
+
+---
+
+## 💬 SISTEMA DE COMENTARIOS/OBSERVACIONES
+
+### **Implementación:**
+
+**Base de Datos:**
+- **Tabla:** `comentarios_reservas`
+- **Script SQL:** `scripts/create_comentarios_table.sql`
+- **Campos:**
+  - `comentario_id` (PK, AUTO_INCREMENT)
+  - `reserva_id` (FK a reservas)
+  - `usuario_id` (FK a usuarios)
+  - `comentario` (TEXT)
+  - `creado` (DATETIME)
+  - `modificado` (DATETIME)
+- **Índices:** `idx_reserva_id`, `idx_usuario_id`, `idx_creado`
+- **Foreign Keys:** CASCADE DELETE con `reservas` y `usuarios`
+
+**Backend:**
+
+**Repository:**
+- **Archivo:** `src/repositories/comentarioRepository.js`
+- **Métodos:**
+  - `findByReservaId(reservaId)` - Obtener todos los comentarios de una reserva
+  - `create(comentarioData)` - Crear nuevo comentario
+  - `update(id, comentario)` - Actualizar comentario
+  - `delete(id)` - Eliminar comentario
+  - `findById(id)` - Obtener comentario por ID
+
+**Service:**
+- **Archivo:** `src/services/comentarioService.js`
+- **Lógica de Negocio:**
+  - Validación de campos requeridos
+  - Validación de longitud máxima (1000 caracteres)
+  - Verificación de permisos para actualizar/eliminar (solo el autor)
+  - Validación de existencia de reserva y usuario
+
+**Controller:**
+- **Archivo:** `src/controllers/comentarioController.js`
+- **Métodos:**
+  - `getComentarios(req, res)` - GET comentarios de una reserva
+  - `createComentario(req, res)` - POST crear comentario
+  - `updateComentario(req, res)` - PUT actualizar comentario
+  - `deleteComentario(req, res)` - DELETE eliminar comentario
+
+**Rutas:**
+- **Archivo:** `src/routes/comentarios.js`
+- **Endpoints:**
+  - `GET /api/v1/reservas/:reservaId/comentarios` - Obtener comentarios (admin/empleado)
+  - `POST /api/v1/reservas/:reservaId/comentarios` - Crear comentario (solo admin)
+  - `PUT /api/v1/comentarios/:id` - Actualizar comentario (solo el autor - admin)
+  - `DELETE /api/v1/comentarios/:id` - Eliminar comentario (solo el autor - admin)
+
+**Permisos:**
+- **Ver comentarios:** Administradores y empleados
+- **Crear comentarios:** Solo administradores
+- **Editar/Eliminar:** Solo el autor del comentario (verificado por `usuario_id`)
+
+**Frontend:**
+
+**Integración:**
+- **Archivo:** `public/administrador/reservas.html`
+- **Sección:** Agregada en el modal de detalles de reserva
+- **Componentes:**
+  - Lista de comentarios con scroll (max-height: 300px)
+  - Cada comentario muestra: autor, texto, fecha de creación
+  - Formulario para agregar nuevo comentario
+  - Validación: máximo 1000 caracteres
+
+**Funcionalidades:**
+- **Archivo:** `public/scripts/administrador-reservas.js`
+- **Funciones:**
+  - `loadComentarios(reservaId)` - Cargar comentarios de una reserva
+  - `renderComentarios(comentarios)` - Renderizar lista de comentarios
+  - Event listener para agregar comentario
+  - Actualización automática después de agregar comentario
+
+**Uso Típico:**
+- "Pago 50% de la reserva realizado"
+- "Cliente solicitó cambio de fecha"
+- "Salón preparado con anticipación"
+- "Recordatorio enviado al cliente"
+- Cualquier observación relevante para la gestión de la reserva
+
+---
+
 ## 📈 ESTADÍSTICAS Y REPORTES
 
 ### **Estadísticas (Stored Procedures):**
@@ -526,21 +829,36 @@ router.get('/:id', authenticateToken, controller.read);
 
 ### **Reportes:**
 
-**PDF:**
-- **Frontend:** `public/scripts/reportes-reservas.js`
-- **Librerías:** `jsPDF`, `jspdf-autotable`
+**PDF (Generación en Backend - Nuevo):**
+- **Backend:** `src/services/reporteService.js` → método `generarPDF`
+- **Backend:** `src/controllers/reportesController.js` → función `reporteReservas`
+- **Librería:** `pdfkit` (agregada a package.json)
+- **Endpoint:** `GET /api/v1/reportes/reservas?formato=PDF&fecha_desde=&fecha_hasta=`
 - **Funcionamiento:**
-  - Obtiene datos de `GET /api/reportes/reservas` (usa stored procedure)
-  - Genera PDF en el cliente
-  - Incluye tabla con todas las columnas de reservas detalladas
+  - Obtiene datos del stored procedure `sp_reservas_detalladas`
+  - Genera PDF en el backend usando `pdfkit`
+  - Modo horizontal (landscape) para mejor visualización de tablas
+  - Incluye: ID reserva, fecha, cliente, salón, turno, temática, servicios, importes, estado
+  - Encabezados repetidos en nuevas páginas
+  - Formato profesional con colores y estilos
+  - Headers: `Content-Type: application/pdf` y `Content-Disposition: attachment`
+  - También disponible en frontend (jsPDF) para compatibilidad
+- **Frontend:** `public/scripts/reportes-reservas.js` (generación alternativa con jsPDF)
 
 **CSV:**
-- **Backend:** `src/controllers/reportesController.js` → `exportarReservasCSV`
-- **Ruta:** `GET /api/reportes/reservas/csv`
+- **Backend:** `src/services/reporteService.js` → método `generarCSV`
+- **Backend:** `src/controllers/reportesController.js` → función `exportarReservasCSV`
+- **Ruta:** `GET /api/v1/reportes/reservas/csv?fecha_desde=&fecha_hasta=`
 - **Funcionamiento:**
   - Obtiene datos del stored procedure `sp_reservas_detalladas`
   - Genera CSV en el backend
-  - Headers apropiados para descarga
+  - Incluye BOM UTF-8 para compatibilidad con Excel
+  - Escape correcto de comillas y caracteres especiales
+  - Headers: `Content-Type: text/csv;charset=utf-8` y `Content-Disposition: attachment`
+
+**Endpoint Unificado:**
+- `GET /api/v1/reportes/reservas?formato=PDF|CSV|JSON&fecha_desde=&fecha_hasta=`
+- Soporta tres formatos: PDF (backend), CSV (backend), JSON (frontend)
 
 ---
 
@@ -618,9 +936,11 @@ router.post('/',
 - ✅ Todos los endpoints documentados
 - ✅ Esquemas definidos para todos los modelos (Usuario, Salon, Servicio, Turno, Reserva)
 - ✅ Autenticación JWT documentada
+- ✅ Registro de clientes documentado (nuevo)
 - ✅ Parámetros de query y path documentados
 - ✅ Request bodies documentados
 - ✅ Respuestas documentadas (200, 201, 400, 401, 403, 404, 500)
+- ✅ Endpoints de comentarios documentados (nuevo)
 
 **Tags Organizados:**
 - Autenticación
@@ -632,6 +952,7 @@ router.post('/',
 - Estadísticas
 - Reportes
 - Notificaciones
+- Comentarios (nuevo)
 
 ---
 
@@ -700,6 +1021,12 @@ router.post('/',
 **7. `notificaciones`** (Extra)
 - Tabla adicional para sistema de notificaciones
 
+**8. `comentarios_reservas`** (Extra - Nuevo)
+- Tabla adicional para comentarios/observaciones de administradores en reservas
+- Campos: `comentario_id`, `reserva_id`, `usuario_id`, `comentario`, `creado`, `modificado`
+- Foreign keys a `reservas` y `usuarios`
+- Script SQL: `scripts/create_comentarios_table.sql`
+
 **Script de Corrección:**
 - **Archivo:** `scripts/fix_datetime_fields.js`
 - Ejecuta ALTER TABLE para cambiar TIMESTAMP a DATETIME en todas las tablas
@@ -711,21 +1038,39 @@ router.post('/',
 
 ### **Index Público:**
 
-**Archivo:** `public/index-public.html`
+**Archivo:** `public/index.html`
 
 **Funcionalidades:**
 - ✅ Muestra salones disponibles (sin autenticación)
 - ✅ Muestra servicios disponibles (sin autenticación)
 - ✅ Muestra turnos/horarios disponibles (sin autenticación)
 - ✅ Enlace a página de login
+- ✅ Enlace a página de registro (nuevo)
+- ✅ Diseño moderno con gradientes, transparencias y animaciones
+- ✅ Cards con efectos hover avanzados (transform, shadow, glow)
+- ✅ Animaciones al hacer scroll (Intersection Observer)
 - ✅ Diseño responsive y profesional
+- ✅ Persistencia de sesión (verifica si hay usuario logueado)
 
 **APIs Utilizadas:**
-- `GET /api/salones` (público)
-- `GET /api/servicios` (público)
-- `GET /api/turnos` (público)
+- `GET /api/v1/salones` (público)
+- `GET /api/v1/servicios` (público)
+- `GET /api/v1/turnos` (público)
 
-**Nota:** Este archivo está creado pero debe ser configurado como página inicial o accesible públicamente según necesidades.
+**Página de Registro:**
+
+**Archivo:** `public/registro.html`
+
+**Funcionalidades:**
+- ✅ Formulario de registro público
+- ✅ Campos: nombre, apellido, email (nombre_usuario), contraseña, celular (opcional)
+- ✅ Validación frontend (mínimo 6 caracteres para contraseña)
+- ✅ Validación backend con express-validator
+- ✅ Verificación de email único
+- ✅ Hash automático de contraseña
+- ✅ Generación automática de token JWT
+- ✅ Redirección automática al panel de cliente después del registro
+- ✅ Enlace a página de login
 
 ---
 
@@ -733,17 +1078,21 @@ router.post('/',
 
 ### ✅ **IMPLEMENTADO COMPLETAMENTE:**
 1. ✅ Autenticación con JWT
-2. ✅ Autorización por roles
-3. ✅ BREAD completo para todas las entidades
-4. ✅ Documentación Swagger
-5. ✅ Validaciones con express-validator
-6. ✅ Estadísticas con stored procedures
-7. ✅ Reportes PDF y CSV
-8. ✅ Notificaciones automáticas
-9. ✅ Soft delete en todas las entidades
-10. ✅ Modelo de datos corregido (DATETIME)
-11. ✅ Manejo de errores global
-12. ✅ Frontend público básico
+2. ✅ Registro público de clientes (nuevo)
+3. ✅ Autorización por roles
+4. ✅ BREAD completo para todas las entidades
+5. ✅ Documentación Swagger
+6. ✅ Validaciones con express-validator
+7. ✅ Estadísticas con stored procedures
+8. ✅ Reportes PDF (generación en backend) y CSV
+9. ✅ Notificaciones automáticas
+10. ✅ Envío de emails automáticos (confirmación y cancelación) (nuevo)
+11. ✅ Sistema de comentarios/observaciones para administradores (nuevo)
+12. ✅ Soft delete en todas las entidades
+13. ✅ Hard delete para elementos desactivados
+14. ✅ Modelo de datos corregido (DATETIME)
+15. ✅ Manejo de errores global
+16. ✅ Frontend público completo
 
 ### 🔄 **PENDIENTE DE VERIFICAR/MEJORAR:**
 
@@ -770,28 +1119,29 @@ router.post('/',
 - **Acción:** Configurar cron job en servidor para ejecutar diariamente
 - **Prioridad:** Baja
 
-**5. Registro de Clientes (Público)**
-- **Estado:** Solo admin puede crear usuarios
-- **Acción:** Crear endpoint público para registro de clientes (opcional, según requisitos)
-- **Prioridad:** Baja (puede ser funcionalidad extra)
+**5. Registro de Clientes (Público)** ✅ IMPLEMENTADO
+- **Estado:** ✅ Completamente implementado
+- **Archivos:** `public/registro.html`, `src/routes/auth.js` → `/register`
+- **Funcionalidad:** Los clientes pueden registrarse desde la página pública
 
 ---
 
 ## 📌 RESUMEN DE ARCHIVOS CLAVE
 
 ### **Backend - Controladores:**
-- `src/controllers/authController.js` - Autenticación
+- `src/controllers/authController.js` - Autenticación y registro
 - `src/controllers/usuarioController.js` - CRUD usuarios
 - `src/controllers/salonController.js` - CRUD salones
 - `src/controllers/servicioController.js` - CRUD servicios
 - `src/controllers/turnoController.js` - CRUD turnos
-- `src/controllers/reservaController.js` - CRUD reservas + lógica de negocio
+- `src/controllers/reservaController.js` - CRUD reservas + lógica de negocio + emails
 - `src/controllers/estadisticasController.js` - Estadísticas (stored procedures)
-- `src/controllers/reportesController.js` - Reportes PDF/CSV
+- `src/controllers/reportesController.js` - Reportes PDF/CSV (generación en backend)
 - `src/controllers/notificacionController.js` - API de notificaciones
+- `src/controllers/comentarioController.js` - CRUD comentarios (nuevo)
 
 ### **Backend - Rutas:**
-- `src/routes/auth.js` - Autenticación
+- `src/routes/auth.js` - Autenticación y registro
 - `src/routes/usuarios.js` - Usuarios
 - `src/routes/salones.js` - Salones
 - `src/routes/servicios.js` - Servicios
@@ -800,6 +1150,7 @@ router.post('/',
 - `src/routes/estadisticas.js` - Estadísticas
 - `src/routes/reportes.js` - Reportes
 - `src/routes/notificaciones.js` - Notificaciones
+- `src/routes/comentarios.js` - Comentarios de reservas (nuevo)
 
 ### **Backend - Middlewares:**
 - `src/middlewares/auth.js` - Autenticación JWT y autorización por roles
@@ -815,7 +1166,11 @@ router.post('/',
 - `src/validators/authValidator.js`
 
 ### **Backend - Servicios:**
+- `src/services/authService.js` - Lógica de autenticación y registro
 - `src/services/notificationService.js` - Lógica de notificaciones
+- `src/services/emailService.js` - Servicio de envío de emails (nuevo)
+- `src/services/comentarioService.js` - Lógica de comentarios (nuevo)
+- `src/services/reporteService.js` - Lógica de reportes (incluye generación PDF)
 
 ### **Backend - Configuración:**
 - `src/config/database.js` - Conexión MySQL
@@ -827,6 +1182,7 @@ router.post('/',
 - `database/migrations/002_stored_procedures.sql` - Stored procedures
 - `src/database/create_notifications_table.sql` - Tabla notificaciones
 - `scripts/fix_datetime_fields.js` - Script para corregir campos DATETIME
+- `scripts/create_comentarios_table.sql` - Tabla comentarios_reservas (nuevo)
 
 ### **Frontend - Páginas Administrador:**
 - `public/index.html` - Dashboard admin
@@ -852,8 +1208,9 @@ router.post('/',
 - `public/cliente/turnos-view.html` - Ver turnos
 
 ### **Frontend - Páginas Públicas:**
-- `public/login.html` - Login
-- `public/index-public.html` - Index público (nuevo)
+- `public/login.html` - Login (con enlace a registro)
+- `public/registro.html` - Registro de clientes (nuevo)
+- `public/index.html` - Index público principal con diseño moderno
 
 ### **Frontend - Scripts:**
 - `public/scripts/auth.js` - Utilidades de autenticación
@@ -880,8 +1237,12 @@ El sistema está completo con:
 - ✅ Soft delete implementado
 - ✅ Modelo de datos correcto
 
-**Funcionalidad Extra Implementada:**
+**Funcionalidades Extras Implementadas:**
 - ✅ Sistema de notificaciones completo (backend + API)
+- ✅ Envío de emails automáticos (confirmación y cancelación de reservas)
+- ✅ Sistema de comentarios/observaciones para administradores en reservas
+- ✅ Registro público de clientes
+- ✅ Generación de PDF en backend (además de frontend)
 - ✅ Sidebar profesional con iconos SVG
-- ✅ Frontend público para consulta
+- ✅ Frontend público completo con diseño moderno
 

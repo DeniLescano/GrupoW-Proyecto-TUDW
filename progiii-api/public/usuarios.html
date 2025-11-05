@@ -148,6 +148,7 @@
                 
                 <div class="action-buttons-view">
                     <button id="open-edit-user-form-btn" class="edit-btn">Modificar Usuario</button>
+                    <button id="change-role-btn" class="edit-btn" style="background: #667eea; margin-top: 10px;">Cambiar Rol</button>
                     <button id="delete-user-btn" class="delete-btn">Desactivar Usuario</button>
                     <button id="permanent-delete-user-btn" class="danger-btn" style="display: none; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">⚠️ Eliminar Definitivamente</button>
                 </div>
@@ -200,6 +201,31 @@
                     <button type="button" id="cancel-edit-user-btn" class="cancel-btn">Cancelar</button>
                 </div>
             </form>
+            
+            <!-- Modal para cambiar rol -->
+            <div id="change-role-modal" class="modal" style="display: none;">
+                <div class="modal-content" style="max-width: 400px;">
+                    <span class="close-button close-change-role-modal">&times;</span>
+                    <h2>Cambiar Rol de Usuario</h2>
+                    <p><strong>Usuario:</strong> <span id="change-role-user-name"></span></p>
+                    <p><strong>Rol Actual:</strong> <span id="change-role-current"></span></p>
+                    <form id="change-role-form">
+                        <div class="form-group">
+                            <label for="change-role-select"><strong>Nuevo Rol:</strong></label>
+                            <select id="change-role-select" required>
+                                <option value="1">Cliente</option>
+                                <option value="2">Empleado</option>
+                                <option value="3">Administrador</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="change-role-user-id">
+                        <div class="action-buttons-edit" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                            <button type="submit" class="add-btn" style="width: 100%;">Cambiar Rol</button>
+                            <button type="button" class="cancel-btn close-change-role-modal" style="width: 100%; margin-top: 10px;">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
             
             <style>
                 .form-group {

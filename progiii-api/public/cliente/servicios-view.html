@@ -46,9 +46,16 @@
 
         async function fetchServicios() {
             try {
-                const response = await fetch('http://localhost:3007/api/servicios');
+                const response = await fetch('http://localhost:3007/api/v1/servicios');
                 if (!response.ok) throw new Error('Error al cargar servicios');
-                const servicios = await response.json();
+                const data = await response.json();
+                // Manejar respuesta estandarizada { success: true, data: [...] }
+                const servicios = (data.success && data.data) ? data.data : data;
+                
+                if (!Array.isArray(servicios)) {
+                    servicios = [];
+                }
+                
                 renderServicios(servicios);
             } catch (error) {
                 console.error('Error:', error);
@@ -58,6 +65,12 @@
 
         function renderServicios(servicios) {
             serviciosBody.innerHTML = '';
+            
+            if (!servicios || servicios.length === 0) {
+                serviciosBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: gray;">No hay servicios disponibles</td></tr>';
+                return;
+            }
+            
             servicios.forEach(servicio => {
                 const row = serviciosBody.insertRow();
                 row.insertCell().textContent = servicio.servicio_id;

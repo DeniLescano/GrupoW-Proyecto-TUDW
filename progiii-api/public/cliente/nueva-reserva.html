@@ -20,9 +20,13 @@
         <h1>Nueva Reserva</h1>
     </nav>
 
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
-        <form id="reserva-form" class="modal-content" style="max-width: 100%;">
+    <!-- Modal -->
+    <div id="reserva-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-button" onclick="window.location.href='index.html'" style="cursor: pointer;">&times;</span>
             <h2 style="margin-bottom: 20px;">Crear Nueva Reserva</h2>
+            
+            <form id="reserva-form">
             
             <label for="fecha_reserva">Fecha de la Reserva *</label>
             <input type="date" id="fecha_reserva" required min="">
@@ -52,13 +56,25 @@
                 <p><strong style="font-size: 1.2rem;">Total:</strong> <span id="importe-total" style="font-size: 1.2rem;">$0.00</span></p>
             </div>
             
-            <div style="display: flex; gap: 10px;">
-                <button type="submit" class="add-btn" style="flex: 1;">Crear Reserva</button>
-                <button type="button" class="cancel-btn" onclick="window.location.href='index.html'" style="flex: 1;">Cancelar</button>
-            </div>
-        </form>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="add-btn" style="flex: 1;">Crear Reserva</button>
+                    <button type="button" class="cancel-btn" onclick="window.location.href='index.html'" style="flex: 1;">Cancelar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
+    <script>
+        // Inicializar modal con animaciones
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('reserva-modal');
+            
+            // Agregar clase show para animación
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        });
+    </script>
     <script src="../scripts/cliente-nueva-reserva.js" defer></script>
 </body>
 </html>

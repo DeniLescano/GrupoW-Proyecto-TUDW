@@ -1,6 +1,6 @@
 // Utilidades de autenticación para el frontend
 
-const API_BASE_URL = 'http://localhost:3007/api';
+const API_BASE_URL = 'http://localhost:3007/api/v1';
 
 // Obtener token del localStorage
 function getToken() {

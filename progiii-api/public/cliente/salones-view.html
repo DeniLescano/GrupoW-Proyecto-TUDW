@@ -52,9 +52,16 @@
 
         async function fetchSalones() {
             try {
-                const response = await fetch('http://localhost:3007/api/salones');
+                const response = await fetch('http://localhost:3007/api/v1/salones');
                 if (!response.ok) throw new Error('Error al cargar salones');
-                allSalones = await response.json();
+                const data = await response.json();
+                // Manejar respuesta estandarizada { success: true, data: [...] }
+                allSalones = (data.success && data.data) ? data.data : data;
+                
+                if (!Array.isArray(allSalones)) {
+                    allSalones = [];
+                }
+                
                 renderSalones(allSalones);
             } catch (error) {
                 console.error('Error:', error);

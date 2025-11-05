@@ -43,9 +43,16 @@
 
         async function fetchTurnos() {
             try {
-                const response = await fetch('http://localhost:3007/api/turnos');
+                const response = await fetch('http://localhost:3007/api/v1/turnos');
                 if (!response.ok) throw new Error('Error al cargar turnos');
-                const turnos = await response.json();
+                const data = await response.json();
+                // Manejar respuesta estandarizada { success: true, data: [...] }
+                const turnos = (data.success && data.data) ? data.data : data;
+                
+                if (!Array.isArray(turnos)) {
+                    turnos = [];
+                }
+                
                 renderTurnos(turnos);
             } catch (error) {
                 console.error('Error:', error);
@@ -55,6 +62,12 @@
 
         function renderTurnos(turnos) {
             turnosBody.innerHTML = '';
+            
+            if (!turnos || turnos.length === 0) {
+                turnosBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: gray;">No hay turnos disponibles</td></tr>';
+                return;
+            }
+            
             turnos.forEach(turno => {
                 const row = turnosBody.insertRow();
                 row.insertCell().textContent = turno.orden;

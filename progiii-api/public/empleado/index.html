@@ -8,12 +8,14 @@
 </head>
 <body>
     <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
     <script>
         // Verificar autenticación y rol de empleado
         if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isEmpleado()) {
             window.location.href = '../login.html';
         }
     </script>
+    <script src="../scripts/sidebar.js" defer></script>
     
     <nav class="main-nav">
         <h1><img src="../img/empleados.png" alt="Empleado" style="width: 40px; height: 40px; vertical-align: middle; margin-right: 10px;"> Área de Empleado</h1>

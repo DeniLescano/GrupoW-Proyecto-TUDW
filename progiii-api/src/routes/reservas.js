@@ -159,6 +159,45 @@ router.put('/:id', invalidateCacheAfterWrite('reservas'), authenticateToken, aut
  *       404:
  *         description: Reserva no encontrada
  */
+/**
+ * @swagger
+ * /reservas/{id}/cancelar:
+ *   delete:
+ *     summary: Cancelar una reserva (solo clientes pueden cancelar sus propias reservas)
+ *     tags: [Reservas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID de la reserva
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - motivo_cancelacion
+ *             properties:
+ *               motivo_cancelacion:
+ *                 type: string
+ *                 description: Motivo de la cancelación
+ *     responses:
+ *       200:
+ *         description: Reserva cancelada exitosamente
+ *       400:
+ *         description: Error de validación o reserva ya cancelada
+ *       403:
+ *         description: No tienes permisos para cancelar esta reserva
+ *       404:
+ *         description: Reserva no encontrada
+ */
+router.delete('/:id/cancelar', invalidateCacheAfterWrite('reservas'), authenticateToken, authorizeRoles('cliente'), getReservaValidator, handleValidationErrors, reservaController.cancelar);
+
 router.delete('/:id', invalidateCacheAfterWrite('reservas'), authenticateToken, authorizeRoles('administrador'), deleteReservaValidator, handleValidationErrors, reservaController.delete);
 
 /**

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_URL = '/reservas';
+    const API_URL = 'http://localhost:3007/api/v1/reservas';
     const form = document.getElementById('reserva-form');
     const salonSelect = document.getElementById('salon_id');
     const turnoSelect = document.getElementById('turno_id');
@@ -23,11 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchSalones() {
         try {
-            const response = await fetch('http://localhost:3007/api/salones');
+            const response = await fetch('http://localhost:3007/api/v1/salones');
             if (!response.ok) throw new Error('Error al cargar salones');
             const data = await response.json();
             // Manejar respuesta estandarizada { success: true, data: [...] }
             salones = (data.success && data.data) ? data.data : data;
+            
+            if (!Array.isArray(salones)) {
+                salones = [];
+            }
             
             salonSelect.innerHTML = '<option value="">Seleccione un salón</option>';
             salones.forEach(salon => {
@@ -45,11 +49,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchTurnos() {
         try {
-            const response = await fetch('http://localhost:3007/api/turnos');
+            const response = await fetch('http://localhost:3007/api/v1/turnos');
             if (!response.ok) throw new Error('Error al cargar turnos');
             const data = await response.json();
             // Manejar respuesta estandarizada { success: true, data: [...] }
             turnos = (data.success && data.data) ? data.data : data;
+            
+            if (!Array.isArray(turnos)) {
+                turnos = [];
+            }
             
             turnoSelect.innerHTML = '<option value="">Seleccione un turno</option>';
             turnos.forEach(turno => {
@@ -66,11 +74,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchServicios() {
         try {
-            const response = await fetch('http://localhost:3007/api/servicios');
+            const response = await fetch('http://localhost:3007/api/v1/servicios');
             if (!response.ok) throw new Error('Error al cargar servicios');
             const data = await response.json();
             // Manejar respuesta estandarizada { success: true, data: [...] }
             servicios = (data.success && data.data) ? data.data : data;
+            
+            if (!Array.isArray(servicios)) {
+                servicios = [];
+            }
             
             serviciosContainer.innerHTML = '';
             servicios.forEach(servicio => {
@@ -140,18 +152,22 @@ document.addEventListener('DOMContentLoaded', () => {
             turno_id,
             tematica: tematica || null,
             foto_cumpleaniero: foto_cumpleaniero || null,
-            servicios: serviciosSeleccionados.map(s => ({ servicio_id: s.servicio_id }))
+            servicios: serviciosSeleccionados.map(s => s.servicio_id) // Enviar solo IDs enteros
         };
 
         try {
             const response = await window.auth.fetchWithAuth(API_URL, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(reservaData)
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Error al crear la reserva');
+                const errorMessage = errorData.error || errorData.message || errorData.details?.map(e => e.msg).join(', ') || 'Error al crear la reserva';
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();

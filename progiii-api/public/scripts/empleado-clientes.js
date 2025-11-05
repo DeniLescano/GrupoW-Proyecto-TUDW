@@ -13,18 +13,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchClientes() {
         try {
-            const response = await window.auth.fetchWithAuth(API_URL);
+            const response = await window.auth.fetchWithAuth('http://localhost:3007/api/v1/usuarios');
             if (!response.ok) {
-                throw new Error('Error al cargar los clientes');
+                const errorData = await response.json();
+                throw new Error(errorData.error || errorData.message || 'Error al cargar los clientes');
             }
             const data = await response.json();
             // Manejar respuesta estandarizada { success: true, data: [...] }
             const usuarios = (data.success && data.data) ? data.data : data;
+            
+            if (!Array.isArray(usuarios)) {
+                usuarios = [];
+            }
+            
             // Filtrar solo clientes (tipo_usuario = 1)
             allClientes = usuarios.filter(u => u.tipo_usuario === 1);
             renderClientes(allClientes);
         } catch (error) {
             console.error('Error al cargar clientes:', error);
+            if (error.message === 'Sesión expirada' || error.message === 'No autenticado') {
+                // No mostrar error, ya se redirigió al login
+                return;
+            }
             clientesBody.innerHTML = `<tr><td colspan="7" style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</td></tr>`;
         }
     }

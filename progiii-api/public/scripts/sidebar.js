@@ -160,7 +160,7 @@ function createAdminSidebar(currentPage) {
             
             <ul class="sidebar-menu">
                 <li class="sidebar-menu-item">
-                    <a href="${inicioPath}" class="sidebar-menu-link ${currentPage === 'index' ? 'active' : ''}">
+                    <a href="../index.html" class="sidebar-menu-link ${currentPage === 'index' ? 'active' : ''}">
                         <span class="sidebar-menu-icon">${window.Icons?.home || '🏠'}</span>
                         <span class="sidebar-menu-text">Inicio</span>
                     </a>
@@ -268,7 +268,7 @@ function createEmployeeSidebar(currentPage) {
             
             <ul class="sidebar-menu">
                 <li class="sidebar-menu-item">
-                    <a href="${basePath}index.html" class="sidebar-menu-link ${currentPage === 'index' ? 'active' : ''}">
+                    <a href="../index.html" class="sidebar-menu-link ${currentPage === 'index' ? 'active' : ''}">
                         <span class="sidebar-menu-icon">${window.Icons?.home || '🏠'}</span>
                         <span class="sidebar-menu-text">Inicio</span>
                     </a>
@@ -355,7 +355,7 @@ function createClientSidebar(currentPage) {
             
             <ul class="sidebar-menu">
                 <li class="sidebar-menu-item">
-                    <a href="${basePath}index.html" class="sidebar-menu-link ${currentPage === 'index' ? 'active' : ''}">
+                    <a href="../index.html" class="sidebar-menu-link ${currentPage === 'index' ? 'active' : ''}">
                         <span class="sidebar-menu-icon">${window.Icons?.home || '🏠'}</span>
                         <span class="sidebar-menu-text">Inicio</span>
                     </a>

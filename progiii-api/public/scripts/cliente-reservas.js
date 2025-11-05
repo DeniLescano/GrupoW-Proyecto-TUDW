@@ -98,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('view-tematica').textContent = reserva.tematica || '-';
         document.getElementById('view-importe-salon').textContent = formatCurrency(reserva.importe_salon);
         document.getElementById('view-importe-total').textContent = formatCurrency(reserva.importe_total);
+        document.getElementById('view-estado').textContent = (reserva.activo === 1 || reserva.activo === true) ? 'Activa' : 'Cancelada';
         document.getElementById('view-creado').textContent = formatDateTime(reserva.creado);
         
         // Mostrar servicios
@@ -111,6 +112,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } else {
             serviciosList.innerHTML = '<li>No hay servicios adicionales</li>';
+        }
+        
+        // Mostrar/ocultar botón de cancelar según el estado
+        const cancelBtn = document.getElementById('cancel-reserva-btn');
+        const cancelSection = document.getElementById('cancel-reserva-section');
+        if (reserva.activo === 0 || reserva.activo === false) {
+            cancelSection.style.display = 'none';
+        } else {
+            cancelSection.style.display = 'block';
+            cancelBtn.dataset.id = reserva.reserva_id;
         }
         
         detailsModal.style.display = 'flex';
@@ -134,6 +145,117 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         renderReservas(filteredReservas);
     };
+
+    // Cancelar reserva
+    const cancelReservaBtn = document.getElementById('cancel-reserva-btn');
+    const cancelModal = document.getElementById('cancel-modal');
+    const cancelForm = document.getElementById('cancel-reserva-form');
+    const cancelMotivo = document.getElementById('cancel-motivo');
+    const cancelReservaIdHidden = document.getElementById('cancel-reserva-id-hidden');
+    const cancelReservaId = document.getElementById('cancel-reserva-id');
+    const closeCancelModalBtn = document.querySelector('.close-cancel-modal');
+    
+    if (cancelReservaBtn) {
+        cancelReservaBtn.addEventListener('click', () => {
+            const reservaId = cancelReservaBtn.dataset.id;
+            if (!reservaId) {
+                alert('Error: No se pudo obtener el ID de la reserva');
+                return;
+            }
+            
+            cancelReservaId.textContent = reservaId;
+            cancelReservaIdHidden.value = reservaId;
+            cancelMotivo.value = '';
+            
+            cancelModal.style.display = 'flex';
+            setTimeout(() => cancelModal.classList.add('show'), 10);
+        });
+    }
+    
+    if (closeCancelModalBtn) {
+        closeCancelModalBtn.addEventListener('click', () => {
+            cancelModal.classList.remove('show');
+            setTimeout(() => {
+                cancelModal.style.display = 'none';
+            }, 300);
+        });
+    }
+    
+    if (cancelForm) {
+        cancelForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const reservaId = cancelReservaIdHidden.value;
+            const motivo = cancelMotivo.value.trim();
+            
+            if (!motivo) {
+                alert('Por favor ingrese el motivo de la cancelación');
+                return;
+            }
+            
+            if (!confirm(`¿Está seguro de que desea cancelar la reserva ID ${reservaId}?\n\nEsta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            try {
+                // Soft delete - cancelar reserva usando el endpoint de cancelación para clientes
+                const response = await window.auth.fetchWithAuth(`http://localhost:3007/api/v1/reservas/${reservaId}/cancelar`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        motivo_cancelacion: motivo
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al cancelar la reserva');
+                }
+                
+                const data = await response.json();
+                const responseData = data.success && data.data ? data.data : data;
+                
+                let alertMessage = 'Reserva cancelada exitosamente.';
+                
+                // Si hay información de email, mostrarla
+                if (responseData.emailInfo) {
+                    const emailInfo = responseData.emailInfo;
+                    if (emailInfo.enviado) {
+                        alertMessage += `\n\n📧 Email de cancelación enviado a: ${emailInfo.email}`;
+                        if (emailInfo.previewUrl) {
+                            alertMessage += `\n\n🔗 Preview URL (modo desarrollo):\n${emailInfo.previewUrl}`;
+                        }
+                    } else {
+                        alertMessage += `\n\n⚠️ No se pudo enviar el email de cancelación a: ${emailInfo.email}`;
+                    }
+                }
+                
+                alert(alertMessage);
+                
+                cancelModal.classList.remove('show');
+                setTimeout(() => {
+                    cancelModal.style.display = 'none';
+                }, 300);
+                detailsModal.style.display = 'none';
+                
+                fetchReservas();
+            } catch (error) {
+                alert(`Error al cancelar la reserva: ${error.message}`);
+                console.error('Error al cancelar reserva:', error);
+            }
+        });
+    }
+    
+    window.addEventListener('click', (event) => {
+        if (event.target === cancelModal) {
+            cancelModal.classList.remove('show');
+            setTimeout(() => {
+                cancelModal.style.display = 'none';
+            }, 300);
+        }
+    });
 
     fetchReservas();
 });
