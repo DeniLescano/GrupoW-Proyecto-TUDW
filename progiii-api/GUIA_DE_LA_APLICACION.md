@@ -2,7 +2,7 @@
 
 Esta guía detalla la implementación de todas las funcionalidades según los requisitos del Trabajo Final Integrador, incluyendo las funcionalidades extras implementadas.
 
-**Última actualización:** Incluye registro de clientes, envío de emails automáticos, sistema de comentarios y generación de PDF en backend.
+**Última actualización:** Incluye registro de clientes, envío de emails automáticos, sistema de comentarios, generación de PDF en backend, soft/hard delete, reactivación de elementos, cambio de rol, cancelación de reservas por clientes, JWT expiration de 15 minutos con detección de inactividad, y enlace a documentación de API.
 
 ---
 
@@ -16,24 +16,73 @@ Esta guía detalla la implementación de todas las funcionalidades según los re
 6. [Notificaciones Automáticas](#notificaciones-automáticas)
 7. [Envío de Emails](#-envío-de-emails-automáticos-nuevo)
 8. [Sistema de Comentarios](#-sistema-de-comentariosobservaciones-nuevo)
-9. [Estadísticas y Reportes](#estadísticas-y-reportes)
-10. [Validaciones](#validaciones)
-11. [Documentación Swagger](#documentación-swagger)
-12. [Manejo de Errores](#manejo-de-errores)
-13. [Modelo de Datos](#modelo-de-datos)
-14. [Frontend Público](#frontend-público)
+9. [Soft Delete y Hard Delete](#-soft-delete-y-hard-delete)
+10. [Cambio de Rol de Usuarios](#-cambio-de-rol-de-usuarios)
+11. [Estadísticas y Reportes](#estadísticas-y-reportes)
+12. [Validaciones](#validaciones)
+13. [Documentación Swagger](#documentación-swagger)
+14. [Manejo de Errores](#manejo-de-errores)
+15. [Modelo de Datos](#modelo-de-datos)
+16. [Frontend Público](#frontend-público)
 
 ---
 
-## 🚀 INSTALACIÓN Y CONFIGURACIÓN
+## 🚀 INSTALACIÓN Y CONFIGURACIÓN COMPLETA
 
-### 1. Instalar Dependencias NPM
+Esta guía te llevará paso a paso para instalar, configurar y ejecutar la aplicación completa.
+
+---
+
+### 📋 REQUISITOS PREVIOS
+
+Antes de comenzar, asegúrate de tener instalado:
+
+1. **Node.js** (versión 14 o superior)
+   - Verificar instalación: `node --version`
+   - Descargar desde: https://nodejs.org/
+
+2. **MySQL** (versión 5.7 o superior, o MariaDB 10.3+)
+   - Verificar instalación: `mysql --version`
+   - Descargar desde: https://dev.mysql.com/downloads/mysql/
+
+3. **npm** (viene con Node.js)
+   - Verificar instalación: `npm --version`
+
+4. **Git** (opcional, para clonar el repositorio)
+   - Verificar instalación: `git --version`
+
+---
+
+### 🔧 PASO 1: PREPARAR EL PROYECTO
+
+#### 1.1. Navegar a la carpeta del proyecto
 ```bash
 cd progiii-api
+```
+
+#### 1.2. Verificar que estás en el directorio correcto
+Debes ver archivos como:
+- `package.json`
+- `server.js`
+- `src/`
+- `public/`
+- `database/`
+
+---
+
+### 📦 PASO 2: INSTALAR DEPENDENCIAS NPM
+
+#### 2.1. Instalar todas las dependencias
+```bash
 npm install
 ```
 
-**Dependencias principales:**
+Esto instalará todas las dependencias listadas en `package.json`. Puede tomar unos minutos.
+
+#### 2.2. Verificar instalación
+Si todo está bien, deberías ver un mensaje de éxito y una carpeta `node_modules/` creada.
+
+**Dependencias principales que se instalarán:**
 - `express` - Framework web
 - `mysql2` - Cliente MySQL
 - `jsonwebtoken` - Autenticación JWT
@@ -42,57 +91,313 @@ npm install
 - `swagger-jsdoc` y `swagger-ui-express` - Documentación API
 - `express-rate-limit` - Rate limiting
 - `node-cache` - Caché de respuestas
-- `nodemailer` - Envío de emails (nuevo)
-- `pdfkit` - Generación de PDFs en backend (nuevo)
+- `nodemailer` - Envío de emails
+- `pdfkit` - Generación de PDFs
 
-### 2. Configurar Base de Datos
-Ejecutar los scripts SQL en orden:
-1. `database/migrations/001_initial_schema.sql` - Estructura principal
-2. `database/migrations/002_stored_procedures.sql` - Stored procedures
-3. `src/database/create_notifications_table.sql` - Tabla notificaciones
-4. `scripts/create_comentarios_table.sql` - Tabla comentarios (nuevo)
+---
 
-### 3. Configurar Variables de Entorno
-Crear archivo `.env` en la raíz del proyecto:
-```env
-# Base de Datos
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=tu_password
-DB_NAME=reservas
+### 🗄️ PASO 3: CONFIGURAR LA BASE DE DATOS
 
-# JWT
-JWT_SECRET=tu_secret_key_super_seguro_cambiar_en_produccion
+#### 3.1. Crear la Base de Datos
 
-# Servidor
-PORT=3007
+Abre MySQL (Workbench, línea de comandos, o tu cliente preferido) y ejecuta:
 
-# Email (solo para producción)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=tu_email@gmail.com
-SMTP_PASS=tu_password_app
-SMTP_FROM="Sistema de Reservas <tu_email@gmail.com>"
+```sql
+CREATE DATABASE IF NOT EXISTS reservas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE reservas;
 ```
 
-**Nota**: En desarrollo, el sistema usa ethereal para emails de prueba (no requiere configuración).
+#### 3.2. Ejecutar Scripts de Migración en Orden
 
-### 4. Iniciar el Servidor
+**⚠️ IMPORTANTE: Ejecuta los scripts en el orden exacto indicado a continuación.**
+
+**1. Estructura Principal de Tablas**
+```bash
+# Desde MySQL Workbench o línea de comandos:
+mysql -u root -p reservas < database/migrations/001_initial_schema.sql
+```
+
+O copia y pega el contenido del archivo en MySQL Workbench:
+- **Archivo:** `database/migrations/001_initial_schema.sql`
+- **Contenido:** Crea todas las tablas principales (`usuarios`, `salones`, `servicios`, `turnos`, `reservas`, `reservas_servicios`)
+
+**2. Stored Procedures**
+```bash
+mysql -u root -p reservas < database/migrations/002_stored_procedures.sql
+```
+
+O ejecuta el contenido en MySQL Workbench:
+- **Archivo:** `database/migrations/002_stored_procedures.sql`
+- **Contenido:** Crea todos los stored procedures para estadísticas y reportes
+
+**3. Tabla de Notificaciones**
+```bash
+mysql -u root -p reservas < src/database/create_notifications_table.sql
+```
+
+O ejecuta el contenido en MySQL Workbench:
+- **Archivo:** `src/database/create_notifications_table.sql`
+- **Contenido:** Crea la tabla `notificaciones` para el sistema de notificaciones
+
+**4. Tabla de Comentarios**
+```bash
+mysql -u root -p reservas < scripts/create_comentarios_table.sql
+```
+
+O ejecuta el contenido en MySQL Workbench:
+- **Archivo:** `scripts/create_comentarios_table.sql`
+- **Contenido:** Crea la tabla `comentarios_reservas` para comentarios de administradores
+
+**5. (Opcional) Agregar Campo Estado a Reservas**
+Si la tabla `reservas` no tiene el campo `estado`, ejecuta:
+- **Archivo:** `src/database/add_estado_reservas.sql`
+- **Contenido:** Agrega el campo `estado` a la tabla `reservas` si no existe
+
+#### 3.3. Verificar Estructura de la Base de Datos
+
+Ejecuta en MySQL:
+```sql
+USE reservas;
+SHOW TABLES;
+```
+
+Deberías ver las siguientes tablas:
+- `usuarios`
+- `salones`
+- `servicios`
+- `turnos`
+- `reservas`
+- `reservas_servicios`
+- `notificaciones`
+- `comentarios_reservas`
+
+#### 3.4. (Opcional) Cargar Datos de Prueba
+
+Si quieres datos de ejemplo para probar la aplicación:
+
+**Datos Iniciales (Salones, Servicios, Turnos):**
+```bash
+mysql -u root -p reservas < database/seeds/initial_data.sql
+```
+
+**Usuarios de Prueba:**
+```bash
+mysql -u root -p reservas < database/seeds/usuarios_prueba.sql
+```
+
+**Nota:** Las contraseñas de los usuarios de prueba están en `CREDENCIALES.md`
+
+---
+
+### ⚙️ PASO 4: CONFIGURAR VARIABLES DE ENTORNO
+
+#### 4.1. Crear archivo `.env`
+
+En la raíz del proyecto (`progiii-api/`), crea un archivo llamado `.env` (sin extensión).
+
+#### 4.2. Configurar Variables de Entorno
+
+Copia y pega el siguiente contenido en el archivo `.env`, ajustando los valores según tu configuración:
+
+```env
+# ============================================
+# BASE DE DATOS
+# ============================================
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=tu_password_mysql
+DB_NAME=reservas
+
+# ============================================
+# JWT (JSON Web Token)
+# ============================================
+JWT_SECRET=tu_secret_key_super_seguro_cambiar_en_produccion_123456789
+
+# ============================================
+# SERVIDOR
+# ============================================
+PORT=3007
+
+# ============================================
+# EMAIL (Solo para producción)
+# ============================================
+# En desarrollo, el sistema usa Ethereal (no requiere configuración)
+# Deja estas variables vacías o comentadas para desarrollo
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_USER=tu_email@gmail.com
+# SMTP_PASS=tu_password_app
+# SMTP_FROM="Sistema de Reservas <tu_email@gmail.com>"
+```
+
+#### 4.3. Ajustar Valores
+
+**Base de Datos:**
+- `DB_HOST`: Generalmente `localhost`
+- `DB_USER`: Tu usuario de MySQL (generalmente `root`)
+- `DB_PASSWORD`: Tu contraseña de MySQL
+- `DB_NAME`: `reservas` (o el nombre que le diste a la base de datos)
+
+**JWT:**
+- `JWT_SECRET`: Cambia por una clave secreta aleatoria y segura (mínimo 32 caracteres)
+
+**Servidor:**
+- `PORT`: Puerto donde correrá la aplicación (por defecto `3007`)
+
+**Email (Solo Producción):**
+- Si estás en desarrollo, NO configures estas variables
+- El sistema usará Ethereal automáticamente para emails de prueba
+- En producción, descomenta y configura según tu proveedor SMTP
+
+---
+
+### 🚀 PASO 5: INICIAR EL SERVIDOR
+
+#### 5.1. Verificar que todo está listo
+
+Asegúrate de que:
+- ✅ Dependencias instaladas (`node_modules/` existe)
+- ✅ Base de datos creada y migrada
+- ✅ Archivo `.env` configurado correctamente
+- ✅ MySQL está corriendo
+
+#### 5.2. Iniciar el servidor
+
+**Opción A: Modo Producción**
 ```bash
 npm start
-# o para desarrollo con auto-reload:
+```
+
+**Opción B: Modo Desarrollo (con auto-reload)**
+```bash
 npm run dev
 ```
 
-El servidor estará disponible en `http://localhost:3007`
+#### 5.3. Verificar que el servidor inició correctamente
 
-### 5. Acceder a la Aplicación
-- Frontend: `http://localhost:3007/`
-- API Docs (Swagger): `http://localhost:3007/api-docs`
-- Login: `http://localhost:3007/login.html`
-- Registro: `http://localhost:3007/registro.html`
+Deberías ver en la consola algo como:
+```
+🚀 Servidor corriendo en http://localhost:3007
+📚 Documentación API disponible en http://localhost:3007/api-docs
+✅ Base de datos conectada correctamente
+```
 
-Ver `CREDENCIALES.md` para credenciales de prueba.
+Si ves errores, verifica:
+- Que MySQL esté corriendo
+- Que las credenciales en `.env` sean correctas
+- Que la base de datos `reservas` exista
+- Que el puerto 3007 no esté ocupado por otra aplicación
+
+---
+
+### ✅ PASO 6: VERIFICAR INSTALACIÓN
+
+#### 6.1. Acceder a la Aplicación
+
+Abre tu navegador y visita:
+
+**Frontend Principal:**
+- URL: `http://localhost:3007/`
+- Deberías ver la página principal con salones, servicios y turnos
+
+**Documentación de API (Swagger):**
+- URL: `http://localhost:3007/api-docs`
+- Deberías ver la documentación interactiva de la API
+
+**Página de Login:**
+- URL: `http://localhost:3007/login.html`
+- Deberías ver el formulario de inicio de sesión
+
+**Página de Registro:**
+- URL: `http://localhost:3007/registro.html`
+- Deberías ver el formulario de registro de clientes
+
+#### 6.2. Probar Login
+
+Si cargaste los datos de prueba, puedes iniciar sesión con las credenciales de `CREDENCIALES.md`.
+
+#### 6.3. Verificar API
+
+Prueba hacer una petición GET a:
+```
+http://localhost:3007/api/v1/salones
+```
+
+Deberías recibir una respuesta JSON con los salones (aunque esté vacía si no cargaste datos).
+
+---
+
+### 🔍 TROUBLESHOOTING (Solución de Problemas)
+
+#### Error: "Cannot connect to MySQL"
+- **Causa:** MySQL no está corriendo o credenciales incorrectas
+- **Solución:** 
+  - Verifica que MySQL esté corriendo: `sudo service mysql start` (Linux) o desde servicios (Windows)
+  - Verifica credenciales en `.env`
+
+#### Error: "Database 'reservas' does not exist"
+- **Causa:** La base de datos no fue creada
+- **Solución:** Ejecuta `CREATE DATABASE reservas;` en MySQL
+
+#### Error: "Table 'usuarios' doesn't exist"
+- **Causa:** No se ejecutaron los scripts de migración
+- **Solución:** Ejecuta los scripts SQL en orden (Paso 3.2)
+
+#### Error: "Port 3007 is already in use"
+- **Causa:** Otra aplicación está usando el puerto 3007
+- **Solución:** 
+  - Cambia `PORT` en `.env` a otro puerto (ej: 3008)
+  - O detén la aplicación que está usando el puerto 3007
+
+#### Error: "Module not found"
+- **Causa:** Dependencias no instaladas correctamente
+- **Solución:** 
+  - Elimina `node_modules/` y `package-lock.json`
+  - Ejecuta `npm install` nuevamente
+
+#### Error: "JWT_SECRET is required"
+- **Causa:** Variable de entorno no configurada
+- **Solución:** Verifica que el archivo `.env` exista y tenga `JWT_SECRET` configurado
+
+---
+
+### 📝 RESUMEN DE ARCHIVOS IMPORTANTES
+
+**Scripts SQL (en orden de ejecución):**
+1. `database/migrations/001_initial_schema.sql` - Tablas principales
+2. `database/migrations/002_stored_procedures.sql` - Stored procedures
+3. `src/database/create_notifications_table.sql` - Tabla notificaciones
+4. `scripts/create_comentarios_table.sql` - Tabla comentarios
+5. `src/database/add_estado_reservas.sql` - Campo estado (si no existe)
+
+**Datos de Prueba (opcionales):**
+- `database/seeds/initial_data.sql` - Salones, servicios, turnos de ejemplo
+- `database/seeds/usuarios_prueba.sql` - Usuarios de prueba
+
+**Configuración:**
+- `.env` - Variables de entorno (crear manualmente)
+- `CREDENCIALES.md` - Credenciales de usuarios de prueba
+
+**Archivos Principales:**
+- `server.js` - Punto de entrada del servidor
+- `src/app.js` - Configuración de Express
+- `package.json` - Dependencias y scripts
+
+---
+
+### 🎉 ¡LISTO!
+
+Si llegaste hasta aquí sin errores, tu aplicación está instalada y lista para usar.
+
+**Próximos pasos:**
+1. Revisa `CREDENCIALES.md` para credenciales de prueba
+2. Explora la documentación API en `http://localhost:3007/api-docs`
+3. Prueba crear un usuario desde `http://localhost:3007/registro.html`
+4. Inicia sesión y explora los diferentes paneles según el rol
+
+**Para más información:**
+- Ver secciones de esta guía para detalles de cada funcionalidad
+- Consultar `SISTEMA_DE_EMAILS.md` para configuración de emails
 
 ---
 
@@ -151,13 +456,27 @@ Ver `CREDENCIALES.md` para credenciales de prueba.
 **3. Reservas - Listar (Solo propias)**
 - **Archivos:**
   - Backend: `src/controllers/reservaController.js` → función `browseByUser`
-  - Backend: `src/routes/reservas.js` → ruta `GET /api/reservas/mis-reservas`
+  - Backend: `src/routes/reservas.js` → ruta `GET /api/v1/reservas/mis-reservas`
   - Frontend: `public/cliente/reservas.html`
   - Frontend: `public/scripts/cliente-reservas.js`
 - **Funcionamiento:**
   - El cliente solo ve sus propias reservas activas
   - Se filtra por `usuario_id` del token JWT
   - Se muestran salón, fecha, turno, servicios asociados e importes
+
+**3.1. Reservas - Cancelar (Solo propias)**
+- **Archivos:**
+  - Backend: `src/controllers/reservaController.js` → función `cancelar`
+  - Backend: `src/routes/reservas.js` → ruta `DELETE /api/v1/reservas/:id/cancelar`
+  - Frontend: `public/cliente/reservas.html` → botón "Cancelar Reserva"
+  - Frontend: `public/scripts/cliente-reservas.js` → función `cancelarReserva`
+- **Funcionamiento:**
+  - El cliente puede cancelar solo sus propias reservas activas
+  - Debe ingresar un motivo obligatorio de cancelación
+  - El motivo se guarda automáticamente como comentario
+  - Se realiza soft delete (`activo = 0`)
+  - Se envía email automático de cancelación
+  - Solo administradores pueden hacer hard delete (eliminación definitiva)
 
 **4. Listado de Salones (Público)**
 - **Archivos:**
@@ -329,8 +648,8 @@ Ver `CREDENCIALES.md` para credenciales de prueba.
 
 **6. BREAD Completo - Usuarios**
 - **Archivos:**
-  - Backend: `src/controllers/usuarioController.js` → funciones `browse`, `read`, `add`, `edit`, `delete`
-  - Backend: `src/routes/usuarios.js` → todas las rutas CRUD
+  - Backend: `src/controllers/usuarioController.js` → funciones `browse`, `read`, `add`, `edit`, `delete`, `permanentDelete`
+  - Backend: `src/routes/usuarios.js` → todas las rutas CRUD + `DELETE /api/v1/usuarios/:id/permanent`
   - Frontend: `public/usuarios.html`
   - Frontend: `public/scripts/usuarios.js`
 - **Funcionamiento:**
@@ -339,6 +658,12 @@ Ver `CREDENCIALES.md` para credenciales de prueba.
   - Puede asignar roles (cliente, empleado, administrador)
   - Contraseñas se hashean con bcrypt antes de guardar
   - Middleware: `authorizeRoles('administrador')` en todas las rutas
+  - **Soft Delete:** Cambia `activo = 0`, no elimina físicamente
+  - **Reactivación:** Puede reactivar usuarios desactivados (cambia `activo = 1`)
+  - **Hard Delete:** Solo disponible para usuarios desactivados, elimina físicamente de la BD
+  - **Cambio de Rol:** Puede cambiar el `tipo_usuario` de cualquier usuario desde el modal de detalles
+  - **Visualización:** Muestra tablas separadas para usuarios activos e inactivos
+  - **Resaltado:** El usuario actual se resalta en verde en la tabla de usuarios activos
 
 **7. Generación de Informes Estadísticos (Stored Procedures)**
 - **Archivos:**
@@ -476,8 +801,30 @@ Ver `CREDENCIALES.md` para credenciales de prueba.
     apellido: usuario.apellido
   }
   ```
-- **Expiración:** 24 horas
+- **Expiración:** 15 minutos (configurado para evaluación)
 - **Registro:** También genera token automáticamente después del registro exitoso
+
+**Gestión de Sesión y Expiración:**
+- **Archivo:** `public/scripts/auth.js`
+- **Funciones de Gestión de Sesión:**
+  - `decodeToken(token)` - Decodifica el token JWT sin verificar
+  - `isTokenExpired(token)` - Verifica si el token está expirado
+  - `isTokenExpiringSoon(token)` - Verifica si el token expira en menos de 1 minuto
+  - `checkTokenExpiration()` - Verifica periódicamente la expiración del token
+- **Detección de Inactividad:**
+  - **Sistema implementado:** Detección automática de inactividad del usuario
+  - **Tiempo de advertencia:** 14 minutos de inactividad
+  - **Tiempo de expiración:** 15 minutos de inactividad
+  - **Eventos monitoreados:** `mousedown`, `mousemove`, `keypress`, `scroll`, `touchstart`, `click`
+  - **Modal de advertencia:** Se muestra a los 14 minutos con opción de "Continuar Sesión"
+  - **Redirección automática:** A los 15 minutos redirige a `index.html` si no se continúa
+  - **Funciones:**
+    - `resetInactivityTimer()` - Reinicia el temporizador de inactividad
+    - `initInactivityDetection()` - Inicia la detección de inactividad
+    - `stopInactivityDetection()` - Detiene la detección de inactividad
+    - `showExpirationWarningModal()` - Muestra modal de advertencia
+    - `closeExpirationWarningModal()` - Cierra modal de advertencia
+    - `continueSession()` - Extiende la sesión haciendo refresh del token
 
 **Frontend:**
 - **Archivo:** `public/scripts/auth.js`
@@ -676,13 +1023,30 @@ router.get('/:id', authenticateToken, controller.read);
 
 **2. Email de Cancelación de Reserva:**
 - **Trigger:** Cuando se cancela una reserva (soft delete - `activo = 0`)
-- **Archivo:** `src/controllers/reservaController.js` → función `delete` y `edit`
+- **Archivos:** 
+  - `src/controllers/reservaController.js` → función `delete`, `edit` y `cancelar`
+  - `src/routes/reservas.js` → ruta `DELETE /api/v1/reservas/:id/cancelar` (para clientes)
 - **Funcionamiento:**
   - Se llama automáticamente cuando se desactiva una reserva
   - Se envía al email del cliente (`nombre_usuario`)
   - Template HTML con diseño diferenciado (rojo)
   - Incluye: fecha, salón, dirección, horario, importe
   - Mensaje: "Reserva Cancelada" con detalles de la reserva cancelada
+  - **Cancelación por Cliente:** Los clientes pueden cancelar sus propias reservas desde "Mis Reservas", deben ingresar un motivo obligatorio que se guarda como comentario
+
+**3. Cancelación de Reservas por Cliente (Nuevo):**
+- **Archivos:**
+  - Backend: `src/controllers/reservaController.js` → función `cancelar`
+  - Backend: `src/routes/reservas.js` → ruta `DELETE /api/v1/reservas/:id/cancelar`
+  - Frontend: `public/cliente/reservas.html`
+  - Frontend: `public/scripts/cliente-reservas.js`
+- **Funcionamiento:**
+  - Los clientes pueden cancelar solo sus propias reservas desde "Mis Reservas"
+  - Deben ingresar un motivo obligatorio de cancelación
+  - El motivo se guarda automáticamente como comentario en la reserva
+  - Se realiza soft delete (`activo = 0`)
+  - Se envía email automático de cancelación al cliente
+  - Solo los administradores pueden hacer hard delete (eliminación definitiva)
 
 **Configuración:**
 
@@ -708,6 +1072,25 @@ router.get('/:id', authenticateToken, controller.read);
 - Se integra automáticamente en `reservaController.js`
 - No bloquea la respuesta HTTP (se envía en background)
 - Errores se registran en consola pero no afectan la respuesta
+
+**Notificaciones de Envío:**
+- **Frontend:** Al confirmar o cancelar una reserva, se muestra un alert con:
+  - ✅ Confirmación de la operación
+  - 📧 Email enviado a: [email del cliente]
+  - 🔗 Preview URL (en modo desarrollo con Ethereal)
+- **Backend:** En consola del servidor se registra cada envío con Preview URL
+
+**Cómo Ver Emails en Desarrollo:**
+- **Modo Ethereal (sin SMTP configurado):**
+  - Cuando se envía un email, aparece un Preview URL en el alert del frontend y en la consola del servidor
+  - Copiar y abrir la URL en el navegador para ver el email completo
+  - Ejemplo: `https://ethereal.email/message/wafls3e7q6k5...`
+  - Los emails no se envían realmente, solo se generan para visualización
+- **Modo Producción (con SMTP configurado):**
+  - Los emails se envían realmente al buzón del cliente
+  - No hay Preview URL, el email llega al email real del usuario
+
+**Ver documentación completa:** Ver archivo `SISTEMA_DE_EMAILS.md` para detalles completos.
 
 ---
 
@@ -793,6 +1176,98 @@ router.get('/:id', authenticateToken, controller.read);
 - "Salón preparado con anticipación"
 - "Recordatorio enviado al cliente"
 - Cualquier observación relevante para la gestión de la reserva
+
+---
+
+## 🔄 SOFT DELETE Y HARD DELETE
+
+### **Implementación:**
+
+**Soft Delete (Desactivación):**
+- **Disponible para:** Usuarios, Salones, Servicios, Turnos, Reservas
+- **Funcionamiento:**
+  - Cambia el campo `activo = 0` en lugar de eliminar físicamente
+  - El registro permanece en la base de datos
+  - No aparece en listados normales (solo con `?all=true`)
+  - Se puede reactivar cambiando `activo = 1`
+- **Endpoints:**
+  - `DELETE /api/v1/usuarios/:id` - Soft delete usuario
+  - `DELETE /api/v1/salones/:id` - Soft delete salón
+  - `DELETE /api/v1/servicios/:id` - Soft delete servicio
+  - `DELETE /api/v1/turnos/:id` - Soft delete turno
+  - `DELETE /api/v1/reservas/:id` - Soft delete reserva
+- **Visualización Frontend:**
+  - Tablas separadas para elementos activos e inactivos
+  - Botones "Desactivar" / "Reactivar" según estado
+  - Estilos diferenciados (gris, opacidad reducida) para elementos inactivos
+
+**Hard Delete (Eliminación Definitiva):**
+- **Disponible para:** Usuarios, Salones, Servicios, Turnos, Reservas (solo si están desactivados)
+- **Funcionamiento:**
+  - Elimina físicamente el registro de la base de datos
+  - Solo disponible para elementos que ya están desactivados (soft delete)
+  - Requiere doble confirmación (modal de advertencia)
+  - Acción irreversible
+- **Endpoints:**
+  - `DELETE /api/v1/usuarios/:id/permanent` - Hard delete usuario
+  - `DELETE /api/v1/salones/:id/permanent` - Hard delete salón
+  - `DELETE /api/v1/servicios/:id/permanent` - Hard delete servicio
+  - `DELETE /api/v1/turnos/:id/permanent` - Hard delete turno
+  - `DELETE /api/v1/reservas/:id/permanent` - Hard delete reserva
+- **Frontend:**
+  - Botón "Eliminar Definitivamente" solo visible para elementos inactivos
+  - Modal de confirmación con advertencia clara
+  - Requiere escribir "ELIMINAR" o confirmación doble según implementación
+
+**Reactivación:**
+- **Funcionamiento:**
+  - Cambia `activo = 0` a `activo = 1`
+  - Elemento vuelve a aparecer en listados normales
+  - Disponible desde el modal de detalles
+- **Endpoints:**
+  - `PUT /api/v1/usuarios/:id` - Actualizar usuario con `activo = 1`
+  - `PUT /api/v1/salones/:id` - Actualizar salón con `activo = 1`
+  - `PUT /api/v1/servicios/:id` - Actualizar servicio con `activo = 1`
+  - `PUT /api/v1/turnos/:id` - Actualizar turno con `activo = 1`
+  - `PUT /api/v1/reservas/:id` - Actualizar reserva con `activo = 1`
+
+**Listado de Elementos Inactivos:**
+- **Parámetro de Query:** `?all=true`
+- **Funcionamiento:**
+  - Incluye elementos activos e inactivos en la respuesta
+  - Frontend filtra y muestra en tablas separadas
+  - Permite ver todos los elementos para gestión completa
+- **Endpoints que soportan:**
+  - `GET /api/v1/usuarios?all=true`
+  - `GET /api/v1/salones?all=true`
+  - `GET /api/v1/servicios?all=true`
+  - `GET /api/v1/turnos?all=true`
+  - `GET /api/v1/reservas?all=true`
+
+---
+
+## 👤 CAMBIO DE ROL DE USUARIOS
+
+### **Implementación:**
+
+**Funcionalidad:**
+- **Archivos:**
+  - Backend: `src/controllers/usuarioController.js` → función `edit` (actualiza `tipo_usuario`)
+  - Frontend: `public/usuarios.html` → botón "Cambiar Rol" en modal de detalles
+  - Frontend: `public/scripts/usuarios.js` → función `cambiarRol`
+- **Permisos:**
+  - Solo administradores pueden cambiar roles
+  - No se puede cambiar el rol del propio usuario (protección)
+- **Funcionamiento:**
+  - El administrador puede cambiar el `tipo_usuario` de cualquier usuario
+  - Roles disponibles: `1` (Cliente), `2` (Empleado), `3` (Administrador)
+  - Modal de confirmación antes de cambiar
+  - Actualiza inmediatamente el rol en la base de datos
+  - Útil para promover usuarios que se registran como clientes a empleados o administradores
+- **Casos de Uso:**
+  - Un cliente se registra y luego el administrador lo promueve a empleado
+  - Un empleado es promovido a administrador
+  - Un administrador puede degradar roles si es necesario
 
 ---
 
@@ -1046,6 +1521,12 @@ router.post('/',
 - ✅ Muestra turnos/horarios disponibles (sin autenticación)
 - ✅ Enlace a página de login
 - ✅ Enlace a página de registro (nuevo)
+- ✅ **Enlace a Documentación de API (Swagger)** - Nuevo
+  - Card visible en el header del index público
+  - Enlace directo a `http://localhost:3007/api-docs`
+  - Texto: "📚 Docs API REST - Para los profesores"
+  - Descripción: "Docs para los profesores sobre API REST, solo visible en desarrollo para la corrección"
+  - Accesible sin autenticación para evaluación del trabajo
 - ✅ Diseño moderno con gradientes, transparencias y animaciones
 - ✅ Cards con efectos hover avanzados (transform, shadow, glow)
 - ✅ Animaciones al hacer scroll (Intersection Observer)
@@ -1245,4 +1726,13 @@ El sistema está completo con:
 - ✅ Generación de PDF en backend (además de frontend)
 - ✅ Sidebar profesional con iconos SVG
 - ✅ Frontend público completo con diseño moderno
+- ✅ **Soft Delete y Hard Delete** en todas las entidades (usuarios, salones, servicios, turnos, reservas)
+- ✅ **Reactivación de elementos desactivados** desde el frontend
+- ✅ **Cambio de rol de usuarios** por administradores
+- ✅ **Cancelación de reservas por clientes** con motivo obligatorio
+- ✅ **JWT expiration de 15 minutos** con detección de inactividad
+- ✅ **Modal de advertencia de expiración** a los 14 minutos
+- ✅ **Enlace a documentación de API (Swagger)** en index público para evaluación
+- ✅ **Sincronización de columnas** en tablas de elementos activos/inactivos
+- ✅ **Resaltado del usuario actual** en gestión de usuarios
 
