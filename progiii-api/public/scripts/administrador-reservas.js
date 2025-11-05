@@ -155,8 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!activasTable || !inactivasTable) return;
         
-        const activasHeaders = activasTable.querySelectorAll('thead th');
-        const inactivasHeaders = inactivasTable.querySelectorAll('thead th');
+        const activasHeaders = Array.from(activasTable.querySelectorAll('thead th'));
+        const inactivasHeaders = Array.from(inactivasTable.querySelectorAll('thead th'));
         
         // Verificar que ambas tablas tengan exactamente 10 encabezados
         if (activasHeaders.length !== 10 || inactivasHeaders.length !== 10) {
@@ -164,62 +164,76 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Verificar que las filas tengan exactamente 10 celdas
-        const activasRows = activasBody.querySelectorAll('tr');
-        const inactivasRows = inactivasBody.querySelectorAll('tr');
-        
-        if (activasRows.length > 0) {
-            const activasCells = activasRows[0].querySelectorAll('td');
-            if (activasCells.length !== 10) {
-                console.warn('Las filas de la tabla activa deben tener exactamente 10 celdas:', activasCells.length);
-                return;
-            }
+        // Asegurar que ambas tablas tengan el mismo ancho total
+        const activasTableWidth = activasTable.offsetWidth || activasTable.clientWidth;
+        if (activasTableWidth > 0) {
+            inactivasTable.style.width = `${activasTableWidth}px`;
+            inactivasTable.style.minWidth = `${activasTableWidth}px`;
+            inactivasTable.style.maxWidth = `${activasTableWidth}px`;
         }
         
-        if (inactivasRows.length > 0) {
-            const inactivasCells = inactivasRows[0].querySelectorAll('td');
-            if (inactivasCells.length !== 10) {
-                console.warn('Las filas de la tabla inactiva deben tener exactamente 10 celdas:', inactivasCells.length);
-                return;
+        // Obtener los anchos de los encabezados de la tabla activa (como referencia)
+        const headerWidths = activasHeaders.map((header, index) => {
+            const rect = header.getBoundingClientRect();
+            // La última columna (Acciones) debe tener un ancho mínimo suficiente
+            if (index === 9) { // Acciones es la columna 10 (índice 9)
+                return Math.max(rect.width, 120); // Mínimo 120px para la columna de acciones
             }
+            return rect.width;
+        });
+        
+        // Asegurar que la tabla tenga ancho suficiente
+        const totalWidth = headerWidths.reduce((sum, width) => sum + width, 0);
+        if (totalWidth > activasTableWidth) {
+            activasTable.style.minWidth = `${totalWidth + 20}px`;
+            inactivasTable.style.minWidth = `${totalWidth + 20}px`;
         }
         
-        // Solo sincronizar si ambas tablas tienen contenido
-        if (activasRows.length > 0 && inactivasRows.length > 0) {
-            // Primero, asegurar que ambas tablas tengan el mismo ancho total
-            const activasTableWidth = activasTable.offsetWidth;
-            if (activasTableWidth > 0) {
-                inactivasTable.style.width = `${activasTableWidth}px`;
+        // Aplicar los mismos anchos a los encabezados de ambas tablas
+        activasHeaders.forEach((header, index) => {
+            if (headerWidths[index] > 0) {
+                header.style.width = `${headerWidths[index]}px`;
+                header.style.minWidth = `${headerWidths[index]}px`;
+                header.style.maxWidth = `${headerWidths[index]}px`;
             }
+        });
+        
+        inactivasHeaders.forEach((header, index) => {
+            if (headerWidths[index] > 0) {
+                header.style.width = `${headerWidths[index]}px`;
+                header.style.minWidth = `${headerWidths[index]}px`;
+                header.style.maxWidth = `${headerWidths[index]}px`;
+            }
+        });
+        
+        // Aplicar los mismos anchos a TODAS las celdas de ambas tablas
+        const activasRows = Array.from(activasBody.querySelectorAll('tr'));
+        const inactivasRows = Array.from(inactivasBody.querySelectorAll('tr'));
+        
+        // Función auxiliar para aplicar anchos a una fila
+        const applyWidthsToRow = (row) => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            if (cells.length !== headerWidths.length) return;
             
-            // Sincronizar anchos de encabezados
-            activasHeaders.forEach((header, index) => {
-                if (inactivasHeaders[index]) {
-                    const rect = header.getBoundingClientRect();
-                    const width = rect.width;
-                    if (width > 0) {
-                        inactivasHeaders[index].style.width = `${width}px`;
-                        inactivasHeaders[index].style.minWidth = `${width}px`;
-                        inactivasHeaders[index].style.maxWidth = `${width}px`;
+            cells.forEach((cell, index) => {
+                if (headerWidths[index] > 0) {
+                    cell.style.width = `${headerWidths[index]}px`;
+                    cell.style.minWidth = `${headerWidths[index]}px`;
+                    cell.style.maxWidth = `${headerWidths[index]}px`;
+                    // Asegurar que la columna de acciones no se corte
+                    if (index === 9 && cell.classList.contains('table-actions')) {
+                        cell.style.overflow = 'visible';
+                        cell.style.whiteSpace = 'normal';
                     }
                 }
             });
-            
-            // Sincronizar anchos de celdas del cuerpo
-            const activasCells = activasRows[0].querySelectorAll('td');
-            const inactivasCells = inactivasRows[0].querySelectorAll('td');
-            
-            activasCells.forEach((cell, index) => {
-                if (inactivasCells[index]) {
-                    const rect = cell.getBoundingClientRect();
-                    const width = rect.width;
-                    if (width > 0) {
-                        inactivasCells[index].style.width = `${width}px`;
-                        inactivasCells[index].style.minWidth = `${width}px`;
-                    }
-                }
-            });
-        }
+        };
+        
+        // Aplicar a todas las filas activas
+        activasRows.forEach(applyWidthsToRow);
+        
+        // Aplicar a todas las filas inactivas (mismo proceso, misma función)
+        inactivasRows.forEach(applyWidthsToRow);
     }
 
     function renderReservas(reservasToRender) {
@@ -240,23 +254,32 @@ document.addEventListener('DOMContentLoaded', () => {
         reservasInactivas.forEach(reserva => createRow(reserva, inactivosBody));
         
         // Sincronizar anchos después de renderizar (con múltiples delays para asegurar que el DOM se actualizó completamente)
-        // Usar requestAnimationFrame para asegurar que el renderizado se complete
+        // Usar requestAnimationFrame múltiples veces para asegurar que el renderizado se complete
         requestAnimationFrame(() => {
-            setTimeout(() => syncTableColumnWidths(), 0);
-            setTimeout(() => syncTableColumnWidths(), 100);
-            setTimeout(() => syncTableColumnWidths(), 300);
-            setTimeout(() => syncTableColumnWidths(), 500);
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    syncTableColumnWidths();
+                    // Forzar reflow para asegurar que los estilos se apliquen
+                    activosBody.offsetHeight;
+                    inactivosBody.offsetHeight;
+                }, 0);
+                setTimeout(() => syncTableColumnWidths(), 50);
+                setTimeout(() => syncTableColumnWidths(), 150);
+                setTimeout(() => syncTableColumnWidths(), 300);
+                setTimeout(() => syncTableColumnWidths(), 500);
+            });
         });
     }
 
     function createRow(reserva, tbody) {
         const row = tbody.insertRow();
+        
+        // Agregar clase ANTES de insertar celdas para evitar reflow
         if (reserva.activo === 0 || reserva.activo === false) {
             row.classList.add('user-inactive-row');
         }
 
         // Insertar exactamente 10 celdas en el orden correcto
-        // Usar insertCell() sin índice para agregar al final de la fila
         // 1. ID
         const cell1 = row.insertCell();
         cell1.textContent = reserva.reserva_id || '';

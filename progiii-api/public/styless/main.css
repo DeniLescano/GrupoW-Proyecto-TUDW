@@ -731,29 +731,29 @@ button:hover {
 
 .usuarios-table { 
     width: 100%;
-    min-width: 800px; 
+    min-width: 1200px;
     border-collapse: separate;
     border-spacing: 0;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
     background-color: #fff;
     border-radius: 12px;
-    overflow: hidden;
-    table-layout: fixed;
+    overflow: visible;
+    table-layout: fixed; /* Usar fixed para sincronización precisa */
 }
 
 /* Asegurar que todas las tablas tengan el mismo ancho y estructura */
 .table-container .usuarios-table {
     width: 100%;
-    min-width: 800px;
-    table-layout: fixed;
+    min-width: 1200px;
+    table-layout: fixed; /* Usar fixed para sincronización precisa */
 }
 
 /* Sincronizar anchos de columnas entre tablas activas e inactivas */
 .table-container:nth-of-type(2) .usuarios-table,
 .table-container:last-of-type .usuarios-table {
     width: 100%;
-    min-width: 800px;
-    table-layout: fixed;
+    min-width: 1200px;
+    table-layout: fixed; /* Usar fixed para sincronización precisa */
 }
 
 /* Asegurar que ambas tablas tengan el mismo estilo de encabezados */
@@ -763,11 +763,15 @@ button:hover {
     box-sizing: border-box !important;
 }
 
-/* Asegurar que las celdas del cuerpo también tengan el mismo estilo */
+/* Asegurar que TODAS las celdas tengan exactamente el mismo estilo */
 .table-container .usuarios-table tbody td {
     box-sizing: border-box !important;
     vertical-align: middle !important;
+    padding: 14px 20px !important;
 }
+
+/* Las filas inactivas deben tener EXACTAMENTE la misma estructura que las activas */
+/* No agregar ninguna regla CSS que pueda afectar el layout */
 
 .usuarios-table th {
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
@@ -812,9 +816,16 @@ button:hover {
     vertical-align: middle;
     transition: all 0.2s ease;
     white-space: nowrap;
-    overflow: hidden;
+    overflow: visible; /* Cambiado de hidden a visible */
     text-overflow: ellipsis;
     box-sizing: border-box;
+}
+
+/* La columna de acciones debe tener espacio suficiente */
+.usuarios-table td.table-actions {
+    overflow: visible;
+    white-space: normal;
+    min-width: 120px;
 }
 
 .usuarios-table tbody tr:nth-child(even) {
@@ -852,39 +863,12 @@ button:hover {
     color: #777 !important;
     opacity: 0.6;
     filter: grayscale(0.4) brightness(0.9);
-    position: relative;
-    transition: all 0.3s ease;
-}
-
-.user-inactive-row::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(180deg, #dc3545 0%, #c82333 100%);
-    box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
-    z-index: 1;
-    pointer-events: none;
-}
-
-.user-inactive-row::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.08);
-    pointer-events: none;
 }
 
 .user-inactive-row:hover {
     opacity: 0.75;
     filter: grayscale(0.2) brightness(0.95);
     background: linear-gradient(90deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.08) 100%) !important;
-    transform: translateX(2px);
 }
 
 .current-user-row {

@@ -138,14 +138,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const createRow = (user, tbody) => {
             const row = tbody.insertRow();
             
+            // Agregar clases ANTES de insertar celdas para evitar reflow
+            if (user.activo === 0) {
+                row.classList.add('user-inactive-row');
+            }
+            
             // Resaltar usuario actual
             if (currentUserId && user.usuario_id == currentUserId) {
                 row.classList.add('current-user-row');
                 row.setAttribute('title', 'Este es tu usuario');
-            }
-            
-            if (user.activo === 0) {
-                row.classList.add('user-inactive-row');
             }
 
             // Agregar indicador visual para usuario actual en la primera celda
@@ -202,6 +203,77 @@ document.addEventListener('DOMContentLoaded', () => {
         
         usuariosActivos.forEach(user => createRow(user, activosBody));
         usuariosInactivos.forEach(user => createRow(user, inactivosBody));
+        
+        // Sincronizar anchos de columnas después de renderizar
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    syncTableColumnWidths();
+                    activosBody.offsetHeight; // Force reflow
+                    inactivosBody.offsetHeight; // Force reflow
+                }, 0);
+                setTimeout(() => syncTableColumnWidths(), 50);
+                setTimeout(() => syncTableColumnWidths(), 150);
+                setTimeout(() => syncTableColumnWidths(), 300);
+                setTimeout(() => syncTableColumnWidths(), 500);
+            });
+        });
+    }
+    
+    function syncTableColumnWidths() {
+        const activasBody = document.getElementById('usuarios-activos-body');
+        const inactivasBody = document.getElementById('usuarios-inactivos-body');
+        
+        if (!activasBody || !inactivasBody) return;
+        
+        const activasTable = activasBody.closest('table');
+        const inactivasTable = inactivasBody.closest('table');
+        
+        if (!activasTable || !inactivasTable) return;
+        
+        const activasHeaders = Array.from(activasTable.querySelectorAll('thead th'));
+        const inactivasHeaders = Array.from(inactivasTable.querySelectorAll('thead th'));
+        
+        if (activasHeaders.length !== inactivasHeaders.length) return;
+        
+        // Obtener anchos de encabezados activos
+        const headerWidths = activasHeaders.map(header => {
+            const rect = header.getBoundingClientRect();
+            return rect.width;
+        });
+        
+        // Aplicar mismos anchos a encabezados de ambas tablas
+        activasHeaders.forEach((header, index) => {
+            if (headerWidths[index] > 0) {
+                header.style.width = `${headerWidths[index]}px`;
+                header.style.minWidth = `${headerWidths[index]}px`;
+                header.style.maxWidth = `${headerWidths[index]}px`;
+            }
+        });
+        
+        inactivasHeaders.forEach((header, index) => {
+            if (headerWidths[index] > 0) {
+                header.style.width = `${headerWidths[index]}px`;
+                header.style.minWidth = `${headerWidths[index]}px`;
+                header.style.maxWidth = `${headerWidths[index]}px`;
+            }
+        });
+        
+        // Aplicar mismos anchos a todas las celdas
+        const applyWidthsToRow = (row) => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            if (cells.length !== headerWidths.length) return;
+            cells.forEach((cell, index) => {
+                if (headerWidths[index] > 0) {
+                    cell.style.width = `${headerWidths[index]}px`;
+                    cell.style.minWidth = `${headerWidths[index]}px`;
+                    cell.style.maxWidth = `${headerWidths[index]}px`;
+                }
+            });
+        };
+        
+        Array.from(activasBody.querySelectorAll('tr')).forEach(applyWidthsToRow);
+        Array.from(inactivasBody.querySelectorAll('tr')).forEach(applyWidthsToRow);
     }
 
     async function fetchUsuarios() {

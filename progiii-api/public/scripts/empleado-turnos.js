@@ -98,24 +98,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function syncTableColumnWidths() {
-        const activeTable = document.querySelector('.table-container:first-of-type .usuarios-table');
-        const inactiveTable = document.querySelector('.table-container:nth-of-type(2) .usuarios-table');
+        const activasBody = document.getElementById('turnos-activos-body');
+        const inactivasBody = document.getElementById('turnos-inactivos-body');
         
-        if (activeTable && inactiveTable) {
-            const activeHeaders = activeTable.querySelectorAll('thead th');
-            const inactiveHeaders = inactiveTable.querySelectorAll('thead th');
-            
-            if (activeHeaders.length === inactiveHeaders.length) {
-                activeHeaders.forEach((th, index) => {
-                    if (inactiveHeaders[index]) {
-                        const width = th.offsetWidth;
-                        inactiveHeaders[index].style.width = width + 'px';
-                        inactiveHeaders[index].style.minWidth = width + 'px';
-                        inactiveHeaders[index].style.maxWidth = width + 'px';
-                    }
-                });
+        if (!activasBody || !inactivasBody) return;
+        
+        const activasTable = activasBody.closest('table');
+        const inactivasTable = inactivasBody.closest('table');
+        
+        if (!activasTable || !inactivasTable) return;
+        
+        const activasHeaders = Array.from(activasTable.querySelectorAll('thead th'));
+        const inactivasHeaders = Array.from(inactivasTable.querySelectorAll('thead th'));
+        
+        if (activasHeaders.length !== inactivasHeaders.length) return;
+        
+        // Obtener anchos de encabezados activos
+        const headerWidths = activasHeaders.map(header => {
+            const rect = header.getBoundingClientRect();
+            return rect.width;
+        });
+        
+        // Aplicar mismos anchos a encabezados de ambas tablas
+        activasHeaders.forEach((header, index) => {
+            if (headerWidths[index] > 0) {
+                header.style.width = `${headerWidths[index]}px`;
+                header.style.minWidth = `${headerWidths[index]}px`;
+                header.style.maxWidth = `${headerWidths[index]}px`;
             }
-        }
+        });
+        
+        inactivasHeaders.forEach((header, index) => {
+            if (headerWidths[index] > 0) {
+                header.style.width = `${headerWidths[index]}px`;
+                header.style.minWidth = `${headerWidths[index]}px`;
+                header.style.maxWidth = `${headerWidths[index]}px`;
+            }
+        });
+        
+        // Aplicar mismos anchos a todas las celdas
+        const applyWidthsToRow = (row) => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            if (cells.length !== headerWidths.length) return;
+            cells.forEach((cell, index) => {
+                if (headerWidths[index] > 0) {
+                    cell.style.width = `${headerWidths[index]}px`;
+                    cell.style.minWidth = `${headerWidths[index]}px`;
+                    cell.style.maxWidth = `${headerWidths[index]}px`;
+                }
+            });
+        };
+        
+        Array.from(activasBody.querySelectorAll('tr')).forEach(applyWidthsToRow);
+        Array.from(inactivasBody.querySelectorAll('tr')).forEach(applyWidthsToRow);
     }
 
     function renderTurnos(turnosToRender) {
@@ -142,6 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function createRow(turno, tbody) {
         const row = tbody.insertRow();
         
+        // Agregar clase ANTES de insertar celdas para evitar reflow
         if (turno.activo === 0 || turno.activo === false) {
             row.classList.add('user-inactive-row');
         }
