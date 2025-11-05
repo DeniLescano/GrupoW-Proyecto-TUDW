@@ -15,10 +15,10 @@ class TurnoController {
     try {
       const includeInactive = req.query.all === 'true';
       
-      // Si hay parámetros de paginación, usar método paginado
-      if (req.query.page || req.query.limit || req.query.sort || req.query.activo || req.query.orden) {
+      // Si hay parámetros de paginación o se solicita incluir inactivos, usar método paginado
+      if (includeInactive || req.query.page || req.query.limit || req.query.sort || req.query.activo || req.query.orden) {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 1000; // Límite alto por defecto si no se especifica
         const sortField = req.query.sort || 'orden';
         const sortOrder = req.query.order || 'asc';
         

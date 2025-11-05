@@ -715,18 +715,50 @@ button:hover {
     background-color: #fff;
     border-radius: 12px;
     overflow: hidden;
+    table-layout: fixed;
+}
+
+/* Asegurar que todas las tablas tengan el mismo ancho y estructura */
+.table-container .usuarios-table {
+    width: 100%;
+    min-width: 800px;
+    table-layout: fixed;
+}
+
+/* Sincronizar anchos de columnas entre tablas activas e inactivas */
+.table-container:nth-of-type(2) .usuarios-table {
+    width: 100%;
+    min-width: 800px;
+    table-layout: fixed;
 }
 
 .usuarios-table th {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 16px 20px;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
+    color: #ffffff;
+    padding: 18px 22px;
     text-align: left;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.85rem;
-    letter-spacing: 0.5px;
+    font-size: 0.8rem;
+    letter-spacing: 1.2px;
     position: relative;
+    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.3);
+    border-bottom: 3px solid #ff6b6b;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 80px;
+    box-sizing: border-box;
+    height: 60px;
+    vertical-align: middle;
+}
+
+.usuarios-table th:hover {
+    background: linear-gradient(135deg, #2a5298 0%, #3d6db8 50%, #2a5298 100%);
+    box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+    transform: translateY(-1px);
 }
 
 .usuarios-table th:first-child {
@@ -742,6 +774,10 @@ button:hover {
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     vertical-align: middle;
     transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
 }
 
 .usuarios-table tbody tr:nth-child(even) {

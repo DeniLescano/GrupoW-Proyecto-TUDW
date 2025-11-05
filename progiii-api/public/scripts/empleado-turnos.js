@@ -87,11 +87,34 @@ document.addEventListener('DOMContentLoaded', () => {
             // Manejar respuesta estandarizada { success: true, data: [...] }
             allTurnos = (data.success && data.data) ? data.data : data;
             renderTurnos(allTurnos);
+            // Sincronizar anchos de columnas después de renderizar
+            setTimeout(() => syncTableColumnWidths(), 100);
         } catch (error) {
             console.error('Error al cargar turnos:', error);
             const errorMessageRow = `<tr><td colspan="7" style="color: red; text-align: center;">Error al conectar con la API: ${error.message}</td></tr>`;
             activosBody.innerHTML = errorMessageRow;
             inactivosBody.innerHTML = errorMessageRow;
+        }
+    }
+
+    function syncTableColumnWidths() {
+        const activeTable = document.querySelector('.table-container:first-of-type .usuarios-table');
+        const inactiveTable = document.querySelector('.table-container:nth-of-type(2) .usuarios-table');
+        
+        if (activeTable && inactiveTable) {
+            const activeHeaders = activeTable.querySelectorAll('thead th');
+            const inactiveHeaders = inactiveTable.querySelectorAll('thead th');
+            
+            if (activeHeaders.length === inactiveHeaders.length) {
+                activeHeaders.forEach((th, index) => {
+                    if (inactiveHeaders[index]) {
+                        const width = th.offsetWidth;
+                        inactiveHeaders[index].style.width = width + 'px';
+                        inactiveHeaders[index].style.minWidth = width + 'px';
+                        inactiveHeaders[index].style.maxWidth = width + 'px';
+                    }
+                });
+            }
         }
     }
 
@@ -111,6 +134,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         turnosActivos.forEach(turno => createRow(turno, activosBody));
         turnosInactivos.forEach(turno => createRow(turno, inactivosBody));
+        
+        // Sincronizar anchos después de renderizar
+        setTimeout(() => syncTableColumnWidths(), 50);
     }
 
     function createRow(turno, tbody) {

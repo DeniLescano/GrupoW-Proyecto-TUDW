@@ -131,11 +131,34 @@ document.addEventListener('DOMContentLoaded', () => {
             // Manejar respuesta estandarizada { success: true, data: [...] }
             allReservas = (data.success && data.data) ? data.data : data;
             renderReservas(allReservas);
+            // Sincronizar anchos de columnas después de renderizar
+            setTimeout(() => syncTableColumnWidths(), 100);
         } catch (error) {
             console.error('Error:', error);
             const errorMessageRow = `<tr><td colspan="10" style="color: red; text-align: center;">Error: ${error.message}</td></tr>`;
             activosBody.innerHTML = errorMessageRow;
             inactivosBody.innerHTML = errorMessageRow;
+        }
+    }
+
+    function syncTableColumnWidths() {
+        const activeTable = document.querySelector('.table-container:first-of-type .usuarios-table');
+        const inactiveTable = document.querySelector('.table-container:nth-of-type(2) .usuarios-table');
+        
+        if (activeTable && inactiveTable) {
+            const activeHeaders = activeTable.querySelectorAll('thead th');
+            const inactiveHeaders = inactiveTable.querySelectorAll('thead th');
+            
+            if (activeHeaders.length === inactiveHeaders.length) {
+                activeHeaders.forEach((th, index) => {
+                    if (inactiveHeaders[index]) {
+                        const width = th.offsetWidth;
+                        inactiveHeaders[index].style.width = width + 'px';
+                        inactiveHeaders[index].style.minWidth = width + 'px';
+                        inactiveHeaders[index].style.maxWidth = width + 'px';
+                    }
+                });
+            }
         }
     }
 
@@ -155,6 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         reservasActivas.forEach(reserva => createRow(reserva, activosBody));
         reservasInactivas.forEach(reserva => createRow(reserva, inactivosBody));
+        
+        // Sincronizar anchos después de renderizar
+        setTimeout(() => syncTableColumnWidths(), 50);
     }
 
     function createRow(reserva, tbody) {
@@ -214,6 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         deleteReservaBtn.dataset.id = reserva.reserva_id;
+        
+        // Cargar comentarios de la reserva
+        loadComentarios(reserva.reserva_id);
         
         // Si la reserva está desactivada, mostrar "Reactivar", si no "Desactivar"
         if (reserva.activo === 0 || reserva.activo === false) {
@@ -496,6 +525,101 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         renderReservas(filtered);
     };
+
+    // Funciones para comentarios
+    async function loadComentarios(reservaId) {
+        try {
+            const response = await window.auth.fetchWithAuth(`http://localhost:3007/api/v1/reservas/${reservaId}/comentarios`);
+            if (!response.ok) throw new Error('Error al cargar comentarios');
+            const data = await response.json();
+            const comentarios = (data.success && data.data) ? data.data : data;
+            renderComentarios(comentarios);
+        } catch (error) {
+            console.error('Error al cargar comentarios:', error);
+            document.getElementById('comentarios-list').innerHTML = '<p style="color: red; text-align: center;">Error al cargar comentarios</p>';
+        }
+    }
+
+    function renderComentarios(comentarios) {
+        const comentariosList = document.getElementById('comentarios-list');
+        const noComentarios = document.getElementById('no-comentarios');
+        
+        comentariosList.innerHTML = '';
+        
+        if (!comentarios || comentarios.length === 0) {
+            noComentarios.style.display = 'block';
+            return;
+        }
+        
+        noComentarios.style.display = 'none';
+        
+        comentarios.forEach(comentario => {
+            const comentarioDiv = document.createElement('div');
+            comentarioDiv.className = 'comentario-item';
+            comentarioDiv.style.cssText = 'padding: 12px; margin-bottom: 10px; background: white; border-radius: 8px; border-left: 4px solid #667eea; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+            
+            const usuarioInfo = document.createElement('div');
+            usuarioInfo.style.cssText = 'font-weight: bold; color: #667eea; margin-bottom: 5px; font-size: 0.9rem;';
+            usuarioInfo.textContent = `${comentario.usuario_nombre || ''} ${comentario.usuario_apellido || ''}`.trim() || comentario.nombre_usuario || 'Administrador';
+            
+            const comentarioText = document.createElement('div');
+            comentarioText.style.cssText = 'color: #333; margin-bottom: 5px; white-space: pre-wrap; word-wrap: break-word;';
+            comentarioText.textContent = comentario.comentario;
+            
+            const fechaInfo = document.createElement('div');
+            fechaInfo.style.cssText = 'font-size: 0.75rem; color: #999;';
+            fechaInfo.textContent = `Creado: ${formatDateTime(comentario.creado)}`;
+            
+            comentarioDiv.appendChild(usuarioInfo);
+            comentarioDiv.appendChild(comentarioText);
+            comentarioDiv.appendChild(fechaInfo);
+            
+            comentariosList.appendChild(comentarioDiv);
+        });
+    }
+
+    // Event listener para agregar comentario
+    const agregarComentarioBtn = document.getElementById('agregar-comentario-btn');
+    const nuevoComentarioInput = document.getElementById('nuevo-comentario');
+    
+    if (agregarComentarioBtn) {
+        agregarComentarioBtn.addEventListener('click', async () => {
+            const comentario = nuevoComentarioInput.value.trim();
+            
+            if (!comentario) {
+                alert('Por favor ingrese un comentario');
+                return;
+            }
+            
+            if (!currentReserva || !currentReserva.reserva_id) {
+                alert('No hay reserva seleccionada');
+                return;
+            }
+            
+            try {
+                const response = await window.auth.fetchWithAuth(`http://localhost:3007/api/v1/reservas/${currentReserva.reserva_id}/comentarios`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ comentario }),
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || errorData.message || 'Error al agregar comentario');
+                }
+                
+                // Limpiar input y recargar comentarios
+                nuevoComentarioInput.value = '';
+                loadComentarios(currentReserva.reserva_id);
+                
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                console.error('Error al agregar comentario:', error);
+            }
+        });
+    }
 
     // Inicializar
     fetchSalones();

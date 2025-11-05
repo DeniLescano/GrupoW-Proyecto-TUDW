@@ -207,8 +207,8 @@ class ReservaRepository {
    * @param {number} id - ID de la reserva
    * @returns {Promise<Object|null>} Reserva o null si no existe
    */
-  async findById(id) {
-    const query = `
+  async findById(id, includeInactive = false) {
+    let query = `
       SELECT 
         r.*,
         s.titulo as salon_titulo,
@@ -223,8 +223,12 @@ class ReservaRepository {
       INNER JOIN salones s ON r.salon_id = s.salon_id
       INNER JOIN usuarios u ON r.usuario_id = u.usuario_id
       INNER JOIN turnos t ON r.turno_id = t.turno_id
-      WHERE r.reserva_id = ? AND r.activo = 1
+      WHERE r.reserva_id = ?
     `;
+    
+    if (!includeInactive) {
+      query += ' AND r.activo = 1';
+    }
     
     const [reservas] = await db.query(query, [id]);
     

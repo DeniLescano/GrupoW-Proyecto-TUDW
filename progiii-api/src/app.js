@@ -45,6 +45,8 @@ const reportesRoutes = require('./routes/reportes');
 apiV1.use('/reportes', reportesRoutes); // Ya tiene statisticsLimiter en sus rutas
 const notificacionesRoutes = require('./routes/notificaciones');
 apiV1.use('/notificaciones', protectedLimiter, notificacionesRoutes);
+const comentariosRoutes = require('./routes/comentarios');
+apiV1.use('/', comentariosRoutes); // Rutas de comentarios bajo /reservas/:id/comentarios y /comentarios/:id
 
 // Montar API v1
 app.use('/api/v1', apiV1);
@@ -60,6 +62,7 @@ app.use('/api/reservas', protectedLimiter, reservasRoutes);
 app.use('/api/estadisticas', estadisticasRoutes);
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/notificaciones', protectedLimiter, notificacionesRoutes);
+app.use('/api', comentariosRoutes); // Rutas de comentarios para compatibilidad
 
 // Middleware de manejo de errores (debe ir al final, después de todas las rutas)
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');

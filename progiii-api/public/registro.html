@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Sistema de Reservas</title>
+    <link rel="stylesheet" href="styless/main.css">
+    <style>
+        body {
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .register-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .register-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .register-header img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            object-fit: contain;
+        }
+
+        .register-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .register-header p {
+            color: #6c757d;
+        }
+
+        .register-form input {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        .register-form input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .register-form button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .register-form button:hover {
+            background: #0056b3;
+        }
+
+        .register-form button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fee;
+            color: var(--danger-color);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #dfd;
+            color: #28a745;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #6c757d;
+        }
+
+        .login-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <img src="img/logo.png" alt="Registro" onerror="this.style.display='none'">
+            <h1>Registro de Cliente</h1>
+            <p>Crea tu cuenta para hacer reservas</p>
+        </div>
+
+        <div class="error-message" id="error-message"></div>
+        <div class="success-message" id="success-message"></div>
+
+        <form class="register-form" id="register-form">
+            <input 
+                type="text" 
+                id="nombre" 
+                placeholder="Nombre" 
+                required 
+                autocomplete="given-name"
+            >
+            <input 
+                type="text" 
+                id="apellido" 
+                placeholder="Apellido" 
+                required 
+                autocomplete="family-name"
+            >
+            <input 
+                type="email" 
+                id="nombre_usuario" 
+                placeholder="Email (usado como nombre de usuario)" 
+                required 
+                autocomplete="email"
+            >
+            <input 
+                type="password" 
+                id="contrasenia" 
+                placeholder="Contraseña (mínimo 6 caracteres)" 
+                required 
+                autocomplete="new-password"
+                minlength="6"
+            >
+            <input 
+                type="tel" 
+                id="celular" 
+                placeholder="Celular (opcional)" 
+                autocomplete="tel"
+            >
+            <button type="submit" id="register-btn">Registrarse</button>
+        </form>
+
+        <div class="loading" id="loading">Registrando...</div>
+
+        <div class="login-link">
+            ¿Ya tienes cuenta? <a href="login.html">Iniciar Sesión</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3007/api/v1/auth/register';
+        
+        const registerForm = document.getElementById('register-form');
+        const errorMessage = document.getElementById('error-message');
+        const successMessage = document.getElementById('success-message');
+        const loading = document.getElementById('loading');
+        const registerBtn = document.getElementById('register-btn');
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nombre = document.getElementById('nombre').value.trim();
+            const apellido = document.getElementById('apellido').value.trim();
+            const nombre_usuario = document.getElementById('nombre_usuario').value.trim();
+            const contrasenia = document.getElementById('contrasenia').value;
+            const celular = document.getElementById('celular').value.trim();
+
+            // Validación básica
+            if (nombre.length < 2) {
+                showError('El nombre debe tener al menos 2 caracteres');
+                return;
+            }
+
+            if (apellido.length < 2) {
+                showError('El apellido debe tener al menos 2 caracteres');
+                return;
+            }
+
+            if (contrasenia.length < 6) {
+                showError('La contraseña debe tener al menos 6 caracteres');
+                return;
+            }
+
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+            loading.classList.add('show');
+            registerBtn.disabled = true;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nombre,
+                        apellido,
+                        nombre_usuario,
+                        contrasenia,
+                        celular: celular || null
+                    })
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonError) {
+                    throw new Error('Error al procesar la respuesta del servidor');
+                }
+
+                if (!response.ok) {
+                    // Manejar errores de validación
+                    if (data.details && Array.isArray(data.details)) {
+                        const errors = data.details.map(err => err.msg).join(', ');
+                        throw new Error(errors);
+                    }
+                    throw new Error(data.message || data.error || 'Error al registrar usuario');
+                }
+
+                // Verificar que la respuesta tenga la estructura esperada
+                if (!data.success || !data.data) {
+                    throw new Error('Formato de respuesta inválido del servidor');
+                }
+
+                // Extraer datos de la respuesta
+                const registerData = data.data;
+                
+                if (!registerData.token || !registerData.usuario) {
+                    throw new Error('Datos de registro incompletos');
+                }
+
+                // Guardar token y datos del usuario
+                localStorage.setItem('token', registerData.token);
+                localStorage.setItem('usuario', JSON.stringify(registerData.usuario));
+
+                // Mostrar mensaje de éxito
+                successMessage.textContent = '¡Registro exitoso! Redirigiendo...';
+                successMessage.classList.add('show');
+
+                // Redirigir al panel de cliente después de 1 segundo
+                setTimeout(() => {
+                    window.location.href = 'cliente/index.html';
+                }, 1000);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('show');
+                registerBtn.disabled = false;
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+    </script>
+</body>
+</html>
+

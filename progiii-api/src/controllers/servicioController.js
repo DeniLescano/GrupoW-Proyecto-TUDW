@@ -15,10 +15,10 @@ class ServicioController {
     try {
       const includeInactive = req.query.all === 'true';
       
-      // Si hay parámetros de paginación, usar método paginado
-      if (req.query.page || req.query.limit || req.query.sort || req.query.activo || req.query.descripcion) {
+      // Si hay parámetros de paginación o se solicita incluir inactivos, usar método paginado
+      if (includeInactive || req.query.page || req.query.limit || req.query.sort || req.query.activo || req.query.descripcion) {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 1000; // Límite alto por defecto si no se especifica
         const sortField = req.query.sort || 'servicio_id';
         const sortOrder = req.query.order || 'asc';
         

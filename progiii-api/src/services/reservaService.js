@@ -67,8 +67,8 @@ class ReservaService {
    * @returns {Promise<Object>} Reserva con servicios
    * @throws {Error} Si la reserva no existe
    */
-  async getReservaById(id) {
-    const reserva = await reservaRepository.findById(id);
+  async getReservaById(id, includeInactive = false) {
+    const reserva = await reservaRepository.findById(id, includeInactive);
     
     if (!reserva) {
       throw new Error('Reserva no encontrada');

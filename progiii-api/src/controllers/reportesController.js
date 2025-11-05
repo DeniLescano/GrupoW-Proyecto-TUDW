@@ -62,16 +62,17 @@ class ReportesController {
         return;
       }
       
-      // Para PDF: retornar JSON (la generación de PDF se hace en frontend)
-      // Si se quisiera implementar PDF en backend, aquí se usaría una librería como pdfkit
+      // Para PDF: generar PDF en backend
       if (formatoUpper === 'PDF') {
-        // Por ahora retornamos JSON, el frontend genera el PDF
-        // Si se implementa en backend, se usaría:
-        // const pdf = await reporteService.generarPDF(reservas);
-        // res.setHeader('Content-Type', 'application/pdf');
-        // res.setHeader('Content-Disposition', `attachment; filename="reporte_reservas_${new Date().toISOString().split('T')[0]}.pdf"`);
-        // res.send(pdf);
-        res.json(successResponse(reservas, 'Datos para generación de PDF'));
+        const pdf = await reporteService.generarPDF(reservas);
+        
+        // Configurar headers para descarga de archivo PDF
+        const filename = `reporte_reservas_${new Date().toISOString().split('T')[0]}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        
+        // Enviar archivo PDF
+        res.send(pdf);
         return;
       }
       

@@ -49,6 +49,31 @@ class AuthController {
       res.status(statusCode).json(response);
     }
   }
+
+  /**
+   * Registrar nuevo usuario cliente
+   * POST /api/v1/auth/register
+   */
+  async register(req, res) {
+    try {
+      const result = await authService.register(req.body);
+
+      res.status(201).json(successResponse({
+        token: result.token,
+        usuario: result.usuario
+      }, 'Usuario registrado exitosamente'));
+    } catch (error) {
+      if (error.message === 'El email ya está registrado' || 
+          error.message === 'Todos los campos son requeridos') {
+        const { response, statusCode } = errorResponse(error.message, null, 400);
+        return res.status(statusCode).json(response);
+      }
+      
+      console.error('Error en registro:', error);
+      const { response, statusCode } = errorResponse('Error al registrar usuario', error.message, 500);
+      res.status(statusCode).json(response);
+    }
+  }
 }
 
 module.exports = new AuthController();

@@ -75,6 +75,71 @@ class AuthService {
       valid: true
     };
   }
+
+  /**
+   * Registrar nuevo usuario cliente
+   * @param {Object} usuarioData - Datos del usuario
+   * @param {string} usuarioData.nombre - Nombre del usuario
+   * @param {string} usuarioData.apellido - Apellido del usuario
+   * @param {string} usuarioData.nombre_usuario - Email del usuario
+   * @param {string} usuarioData.contrasenia - Contraseña en texto plano
+   * @param {string} [usuarioData.celular] - Celular del usuario (opcional)
+   * @returns {Promise<Object>} Objeto con token y datos del usuario
+   * @throws {Error} Si el usuario ya existe o hay error en la creación
+   */
+  async register(usuarioData) {
+    const { nombre, apellido, nombre_usuario, contrasenia, celular } = usuarioData;
+    
+    // Validar campos requeridos
+    if (!nombre || !apellido || !nombre_usuario || !contrasenia) {
+      throw new Error('Todos los campos son requeridos');
+    }
+    
+    // Verificar si el usuario ya existe
+    const usuarioExistente = await usuarioRepository.findByNombreUsuario(nombre_usuario);
+    if (usuarioExistente) {
+      throw new Error('El email ya está registrado');
+    }
+    
+    // Hash de la contraseña
+    const hashedPassword = await bcrypt.hash(contrasenia, 10);
+    
+    // Crear usuario (tipo_usuario = 1 para cliente)
+    const nuevoUsuario = await usuarioRepository.create({
+      nombre,
+      apellido,
+      nombre_usuario,
+      contrasenia: hashedPassword,
+      tipo_usuario: 1, // Cliente
+      celular: celular || null,
+      activo: 1
+    });
+    
+    // Generar token JWT
+    const token = jwt.sign(
+      {
+        usuario_id: nuevoUsuario.usuario_id,
+        nombre_usuario: nuevoUsuario.nombre_usuario,
+        tipo_usuario: nuevoUsuario.tipo_usuario,
+        nombre: nuevoUsuario.nombre,
+        apellido: nuevoUsuario.apellido
+      },
+      process.env.JWT_SECRET || 'tu_secret_key_super_seguro_cambiar_en_produccion',
+      { expiresIn: '24h' }
+    );
+    
+    // Retornar token y datos del usuario (sin contraseña)
+    return {
+      token,
+      usuario: {
+        usuario_id: nuevoUsuario.usuario_id,
+        nombre: nuevoUsuario.nombre,
+        apellido: nuevoUsuario.apellido,
+        nombre_usuario: nuevoUsuario.nombre_usuario,
+        tipo_usuario: nuevoUsuario.tipo_usuario
+      }
+    };
+  }
 }
 
 module.exports = new AuthService();
