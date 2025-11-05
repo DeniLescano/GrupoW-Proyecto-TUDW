@@ -441,6 +441,10 @@ button:hover {
     transform: translateY(-12px) scale(1.02);
     box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2), 0 0 20px rgba(118, 75, 162, 0.1);
     border-left-width: 8px;
+    /* Alto contraste en hover */
+    filter: contrast(1.2) brightness(1.1);
+    background: linear-gradient(135deg, #ffffff 0%, #e8f0ff 100%);
+    border-color: #667eea;
 }
 
 .salon-inactive {
@@ -471,16 +475,35 @@ button:hover {
     color: var(--dark-text);
     font-size: 1.5rem;
     margin-bottom: 10px;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.salon-card:hover .card-title {
+    color: #0056b3;
+    text-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    font-weight: 700;
 }
 
 .card-info {
     margin-bottom: 8px;
     font-size: 0.95rem;
     color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.salon-card:hover .card-info {
+    color: #495057;
+    font-weight: 500;
 }
 
 .card-info strong {
     color: var(--dark-text);
+    transition: color 0.3s ease;
+}
+
+.salon-card:hover .card-info strong {
+    color: #1a1a1a;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .modal {
@@ -740,6 +763,12 @@ button:hover {
     box-sizing: border-box !important;
 }
 
+/* Asegurar que las celdas del cuerpo también tengan el mismo estilo */
+.table-container .usuarios-table tbody td {
+    box-sizing: border-box !important;
+    vertical-align: middle !important;
+}
+
 .usuarios-table th {
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1e3c72 100%);
     color: #ffffff;
@@ -836,6 +865,8 @@ button:hover {
     width: 4px;
     background: linear-gradient(180deg, #dc3545 0%, #c82333 100%);
     box-shadow: 0 0 8px rgba(220, 53, 69, 0.5);
+    z-index: 1;
+    pointer-events: none;
 }
 
 .user-inactive-row::after {
@@ -999,6 +1030,10 @@ button:hover {
     transform: translateY(-10px) scale(1.02);
     box-shadow: 0 10px 30px rgba(0, 123, 255, 0.2);
     border-color: var(--primary-color);
+    /* Alto contraste en hover */
+    filter: contrast(1.2) brightness(1.15);
+    background: linear-gradient(135deg, #ffffff 0%, #e8f4fd 100%);
+    border-width: 3px;
 }
 
 .nav-card:hover::before {
@@ -1033,11 +1068,13 @@ button:hover {
     font-size: 1.75rem;
     margin-bottom: 15px;
     font-weight: 700;
-    transition: color 0.3s ease;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
 }
 
 .nav-card:hover .nav-card-title {
-    color: var(--secondary-color);
+    color: #0056b3;
+    text-shadow: 0 2px 8px rgba(0, 123, 255, 0.4);
+    font-weight: 800;
 }
 
 .nav-card-description {
@@ -1046,6 +1083,59 @@ button:hover {
     line-height: 1.7;
     margin-top: auto;
     font-weight: 400;
+    transition: color 0.3s ease;
+}
+
+.nav-card:hover .nav-card-description {
+    color: #495057;
+    font-weight: 500;
+}
+
+/* Estilos para modal de expiración de sesión */
+.expiration-modal {
+    z-index: 9999 !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.expiration-modal-content {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+    border: 3px solid #ff6b6b;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.expiration-modal.show {
+    animation: fadeInBackdrop 0.3s ease-out;
+}
+
+.expiration-modal.show .expiration-modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+#continue-session-btn:hover {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+}
+
+#logout-session-btn:hover {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(220, 53, 69, 0.4);
 }
 
 @media (max-width: 768px) {

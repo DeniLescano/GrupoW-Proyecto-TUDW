@@ -48,7 +48,7 @@ class AuthService {
         apellido: usuario.apellido
       },
       process.env.JWT_SECRET || 'tu_secret_key_super_seguro_cambiar_en_produccion',
-      { expiresIn: '24h' }
+      { expiresIn: '15m' }
     );
     
     // Retornar token y datos del usuario (sin contraseña)
@@ -125,7 +125,7 @@ class AuthService {
         apellido: nuevoUsuario.apellido
       },
       process.env.JWT_SECRET || 'tu_secret_key_super_seguro_cambiar_en_produccion',
-      { expiresIn: '24h' }
+      { expiresIn: '15m' }
     );
     
     // Retornar token y datos del usuario (sin contraseña)

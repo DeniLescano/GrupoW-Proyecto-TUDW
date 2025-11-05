@@ -158,30 +158,61 @@ document.addEventListener('DOMContentLoaded', () => {
         const activasHeaders = activasTable.querySelectorAll('thead th');
         const inactivasHeaders = inactivasTable.querySelectorAll('thead th');
         
-        if (activasHeaders.length !== inactivasHeaders.length) return;
+        // Verificar que ambas tablas tengan exactamente 10 encabezados
+        if (activasHeaders.length !== 10 || inactivasHeaders.length !== 10) {
+            console.warn('Las tablas deben tener exactamente 10 encabezados:', activasHeaders.length, 'vs', inactivasHeaders.length);
+            return;
+        }
         
-        activasHeaders.forEach((header, index) => {
-            if (inactivasHeaders[index]) {
-                const width = header.offsetWidth || header.clientWidth;
-                if (width > 0) {
-                    inactivasHeaders[index].style.width = `${width}px`;
-                    inactivasHeaders[index].style.minWidth = `${width}px`;
-                    inactivasHeaders[index].style.maxWidth = `${width}px`;
-                }
-            }
-        });
-        
-        // También sincronizar las celdas del cuerpo para mantener consistencia
+        // Verificar que las filas tengan exactamente 10 celdas
         const activasRows = activasBody.querySelectorAll('tr');
         const inactivasRows = inactivasBody.querySelectorAll('tr');
         
+        if (activasRows.length > 0) {
+            const activasCells = activasRows[0].querySelectorAll('td');
+            if (activasCells.length !== 10) {
+                console.warn('Las filas de la tabla activa deben tener exactamente 10 celdas:', activasCells.length);
+                return;
+            }
+        }
+        
+        if (inactivasRows.length > 0) {
+            const inactivasCells = inactivasRows[0].querySelectorAll('td');
+            if (inactivasCells.length !== 10) {
+                console.warn('Las filas de la tabla inactiva deben tener exactamente 10 celdas:', inactivasCells.length);
+                return;
+            }
+        }
+        
+        // Solo sincronizar si ambas tablas tienen contenido
         if (activasRows.length > 0 && inactivasRows.length > 0) {
+            // Primero, asegurar que ambas tablas tengan el mismo ancho total
+            const activasTableWidth = activasTable.offsetWidth;
+            if (activasTableWidth > 0) {
+                inactivasTable.style.width = `${activasTableWidth}px`;
+            }
+            
+            // Sincronizar anchos de encabezados
+            activasHeaders.forEach((header, index) => {
+                if (inactivasHeaders[index]) {
+                    const rect = header.getBoundingClientRect();
+                    const width = rect.width;
+                    if (width > 0) {
+                        inactivasHeaders[index].style.width = `${width}px`;
+                        inactivasHeaders[index].style.minWidth = `${width}px`;
+                        inactivasHeaders[index].style.maxWidth = `${width}px`;
+                    }
+                }
+            });
+            
+            // Sincronizar anchos de celdas del cuerpo
             const activasCells = activasRows[0].querySelectorAll('td');
             const inactivasCells = inactivasRows[0].querySelectorAll('td');
             
             activasCells.forEach((cell, index) => {
                 if (inactivasCells[index]) {
-                    const width = cell.offsetWidth || cell.clientWidth;
+                    const rect = cell.getBoundingClientRect();
+                    const width = rect.width;
                     if (width > 0) {
                         inactivasCells[index].style.width = `${width}px`;
                         inactivasCells[index].style.minWidth = `${width}px`;
@@ -209,9 +240,13 @@ document.addEventListener('DOMContentLoaded', () => {
         reservasInactivas.forEach(reserva => createRow(reserva, inactivosBody));
         
         // Sincronizar anchos después de renderizar (con múltiples delays para asegurar que el DOM se actualizó completamente)
-        setTimeout(() => syncTableColumnWidths(), 50);
-        setTimeout(() => syncTableColumnWidths(), 150);
-        setTimeout(() => syncTableColumnWidths(), 300);
+        // Usar requestAnimationFrame para asegurar que el renderizado se complete
+        requestAnimationFrame(() => {
+            setTimeout(() => syncTableColumnWidths(), 0);
+            setTimeout(() => syncTableColumnWidths(), 100);
+            setTimeout(() => syncTableColumnWidths(), 300);
+            setTimeout(() => syncTableColumnWidths(), 500);
+        });
     }
 
     function createRow(reserva, tbody) {
@@ -220,19 +255,47 @@ document.addEventListener('DOMContentLoaded', () => {
             row.classList.add('user-inactive-row');
         }
 
-        row.insertCell().textContent = reserva.reserva_id;
-        row.insertCell().textContent = formatDate(reserva.fecha_reserva);
-        row.insertCell().textContent = `${reserva.usuario_nombre || ''} ${reserva.usuario_apellido || ''}`.trim() || reserva.nombre_usuario || '-';
-        row.insertCell().textContent = reserva.salon_titulo || '-';
-        const turnoCell = row.insertCell();
-        turnoCell.textContent = reserva.hora_desde ? `${formatTime(reserva.hora_desde)} - ${formatTime(reserva.hora_hasta)}` : '-';
-        row.insertCell().textContent = reserva.tematica || '-';
-        row.insertCell().textContent = formatCurrency(reserva.importe_total);
-        row.insertCell().textContent = (reserva.activo === 1 || reserva.activo === true) ? 'Activa' : 'Cancelada';
-        row.insertCell().textContent = formatDateTime(reserva.creado);
+        // Insertar exactamente 10 celdas en el orden correcto
+        // Usar insertCell() sin índice para agregar al final de la fila
+        // 1. ID
+        const cell1 = row.insertCell();
+        cell1.textContent = reserva.reserva_id || '';
+        
+        // 2. Fecha
+        const cell2 = row.insertCell();
+        cell2.textContent = formatDate(reserva.fecha_reserva) || '-';
+        
+        // 3. Cliente
+        const cell3 = row.insertCell();
+        cell3.textContent = `${reserva.usuario_nombre || ''} ${reserva.usuario_apellido || ''}`.trim() || reserva.nombre_usuario || '-';
+        
+        // 4. Salón
+        const cell4 = row.insertCell();
+        cell4.textContent = reserva.salon_titulo || '-';
+        
+        // 5. Turno
+        const cell5 = row.insertCell();
+        cell5.textContent = reserva.hora_desde ? `${formatTime(reserva.hora_desde)} - ${formatTime(reserva.hora_hasta)}` : '-';
+        
+        // 6. Temática
+        const cell6 = row.insertCell();
+        cell6.textContent = reserva.tematica || '-';
+        
+        // 7. Importe Total
+        const cell7 = row.insertCell();
+        cell7.textContent = formatCurrency(reserva.importe_total) || '-';
+        
+        // 8. Estado
+        const cell8 = row.insertCell();
+        cell8.textContent = (reserva.activo === 1 || reserva.activo === true) ? 'Activa' : 'Cancelada';
+        
+        // 9. Creado
+        const cell9 = row.insertCell();
+        cell9.textContent = formatDateTime(reserva.creado) || '-';
 
-        const actionsCell = row.insertCell();
-        actionsCell.className = 'table-actions';
+        // 10. Acciones
+        const cell10 = row.insertCell();
+        cell10.className = 'table-actions';
         const viewBtn = document.createElement('button');
         viewBtn.textContent = 'Ver / Editar';
         viewBtn.className = 'edit-btn';
@@ -240,7 +303,14 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
             openDetailsModal(reserva);
         });
-        actionsCell.appendChild(viewBtn);
+        cell10.appendChild(viewBtn);
+        
+        // Verificar que se insertaron exactamente 10 celdas
+        if (row.cells.length !== 10) {
+            console.error('ERROR CRÍTICO: La fila tiene', row.cells.length, 'celdas en lugar de 10. Reserva ID:', reserva.reserva_id);
+            console.log('Celdas en la fila:', Array.from(row.cells).map(c => c.textContent));
+            console.log('Detalles de la reserva:', reserva);
+        }
     }
 
     function openDetailsModal(reserva) {
