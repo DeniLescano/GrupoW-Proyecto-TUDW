@@ -104,17 +104,35 @@ Abre MySQL (Workbench, línea de comandos, o tu cliente preferido) y ejecuta:
 
 ```sql
 CREATE DATABASE IF NOT EXISTS reservas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE reservas;
 ```
 
-#### 3.2. Ejecutar Scripts de Migración en Orden
+#### 3.2. Crear Usuario de Base de Datos (Recomendado)
+
+Por seguridad, es una buena práctica no usar el usuario `root` para la aplicación. A continuación, se muestra cómo crear un usuario dedicado.
+
+**1. Inicia sesión en MySQL como root:**
+```bash
+mysql -u root -p
+```
+
+**2. Ejecuta los siguientes comandos SQL para crear el usuario y dar permisos:**
+```sql
+CREATE USER 'progiii_user'@'localhost' IDENTIFIED BY 'prog123';
+GRANT ALL PRIVILEGES ON reservas.* TO 'progiii_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+A partir de ahora, puedes usar `progiii_user` para interactuar con la base de datos `reservas`.
+
+#### 3.3. Ejecutar Scripts de Migración en Orden
 
 **⚠️ IMPORTANTE: Ejecuta los scripts en el orden exacto indicado a continuación.**
 
 **1. Estructura Principal de Tablas**
 ```bash
 # Desde MySQL Workbench o línea de comandos:
-mysql -u root -p reservas < database/migrations/001_initial_schema.sql
+mysql -u progiii_user -p'prog123' reservas < database/migrations/001_initial_schema.sql
 ```
 
 O copia y pega el contenido del archivo en MySQL Workbench:
@@ -123,7 +141,7 @@ O copia y pega el contenido del archivo en MySQL Workbench:
 
 **2. Stored Procedures**
 ```bash
-mysql -u root -p reservas < database/migrations/002_stored_procedures.sql
+mysql -u progiii_user -p'prog123' reservas <
 ```
 
 O ejecuta el contenido en MySQL Workbench:
@@ -197,15 +215,15 @@ En la raíz del proyecto (`progiii-api/`), crea un archivo llamado `.env` (sin e
 
 #### 4.2. Configurar Variables de Entorno
 
-Copia y pega el siguiente contenido en el archivo `.env`, ajustando los valores según tu configuración:
+Copia y pega el siguiente contenido en el archivo `.env`.
 
 ```env
 # ============================================
 # BASE DE DATOS
 # ============================================
 DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=tu_password_mysql
+DB_USER=progiii_user
+DB_PASSWORD=prog123
 DB_NAME=reservas
 
 # ============================================
@@ -234,8 +252,8 @@ PORT=3007
 
 **Base de Datos:**
 - `DB_HOST`: Generalmente `localhost`
-- `DB_USER`: Tu usuario de MySQL (generalmente `root`)
-- `DB_PASSWORD`: Tu contraseña de MySQL
+- `DB_USER`: `progiii_user` (si seguiste el paso 3.2) o tu usuario de MySQL.
+- `DB_PASSWORD`: `prog123` (si seguiste el paso 3.2) o tu contraseña de MySQL.
 - `DB_NAME`: `reservas` (o el nombre que le diste a la base de datos)
 
 **JWT:**

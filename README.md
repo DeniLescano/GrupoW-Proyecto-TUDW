@@ -1,78 +1,71 @@
-# Guía del Proyecto: API de Reservas PROGIII
+# 🎂 API de Reservas PROGIII 🎂
 
-Este documento sirve como una guía central para la instalación, configuración, y desarrollo continuo de la API para el sistema de reservas de salones de cumpleaños.
+![Node.js](https://img.shields.io/badge/Node.js-14%2B-blue?style=for-the-badge&logo=node.js)
+![Express.js](https://img.shields.io/badge/Express.js-4.x-green?style=for-the-badge&logo=express)
+![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-orange?style=for-the-badge&logo=mysql)
 
-## 1. Descripción General del Proyecto
+> 📌 **Nota Importante:** Este documento es una guía de inicio rápido. Para una documentación exhaustiva y detallada de todas las funcionalidades, por favor consulta el archivo **[GUIA_DE_LA_APLICACION.md](GUIA_DE_LA_APLICACION.md)**.
 
-Esta API REST, desarrollada en Node.js con el framework Express, gestiona las operaciones de un sistema de reservas de salones. Se conecta a una base de datos MySQL para persistir la información y expone una serie de endpoints para interactuar con los recursos de la aplicación.
+## 📖 Descripción General
 
-## 2. Estructura del Proyecto
+Esta API REST, desarrollada en **Node.js** con el framework **Express**, es el backend para un sistema de gestión de reservas de salones de cumpleaños. Se conecta a una base de datos **MySQL** para persistir la información y expone una serie de endpoints para interactuar con los recursos de la aplicación.
 
-La estructura de la API (`progiii-api`) es la siguiente:
+## ✨ Características Principales
+
+*   🔐 **Autenticación y Autorización:** Sistema completo basado en **JWT** con roles (`Cliente`, `Empleado`, `Administrador`).
+*   🗂️ **Gestión de Entidades (BREAD):** BREAD (Browse, Read, Edit, Add, Delete) completo para `Usuarios`, `Salones`, `Servicios`, `Turnos` y `Reservas`.
+*   📊 **Informes y Estadísticas:** Generación de estadísticas mediante **Stored Procedures** y exportación de reportes en formato **PDF** y **CSV**.
+*   📧 **Notificaciones y Emails:** Envío de notificaciones automáticas y correos electrónicos para eventos clave (creación, confirmación y cancelación de reservas).
+*   ⭐ **Funcionalidades Extra:** Sistema de comentarios en reservas, registro público de clientes, y gestión de "soft delete".
+
+## 📂 Estructura del Proyecto
+
+La estructura principal de la API (`progiii-api`) es la siguiente:
 
 ```
 progiii-api/
-├── 📁 database/
-│   ├── 📁 migrations/
-│   │   └── 001_initial_schema.sql   # Script SQL para crear todas las tablas
-│   └── 📁 seeds/
-│       └── initial_data.sql         # Script SQL para poblar la BD con datos de prueba
-│
-├── 📁 src/
-│   ├── 📁 config/
-│   │   └── database.js              # Configuración de la conexión a MySQL
-│   │
-│   ├── 📁 controllers/
-│   │   └── salonController.js       # Lógica de negocio para la entidad 'salones'
-│   │
-│   ├── 📁 middlewares/              # (Vacío) Para futuros middlewares
-│   │
-│   ├── 📁 routes/
-│   │   └── salones.js               # Define los endpoints para /api/salones
-│   │
-│   ├── 📁 utils/                    # (Vacío) Para futuras funciones auxiliares
-│   │
-│   └── app.js                       # Archivo principal de Express (configura middlewares y rutas)
-│
-├── .env                             # Variables de entorno (versionado para el equipo)
-├── .gitignore                       # Archivo para ignorar dependencias (node_modules)
-├── package.json                     # Dependencias y scripts del proyecto
-└── server.js                        # Punto de entrada (inicia el servidor)
+├── database/         # Migraciones y seeds
+├── public/           # Archivos del frontend
+├── src/              # Código fuente de la API
+│   ├── config/
+│   ├── controllers/
+│   ├── middlewares/
+│   ├── repositories/
+│   ├── routes/
+│   ├── services/
+│   ├── utils/
+│   └── validators/
+├── .env.example      # Ejemplo de variables de entorno
+├── .gitignore
+├── package.json
+└── server.js         # Punto de entrada de la aplicación
 ```
 
-## 3. Cómo Instalar y Configurar el Entorno
+## 🚀 Puesta en Marcha
 
-Sigue estas instrucciones para tener un entorno de desarrollo funcional en tu máquina.
+### 4.1. Prerrequisitos
 
-### 3.1. Prerrequisitos
+*   Node.js (v14 o superior)
+*   npm
+*   Git
+*   Servidor de MySQL
 
-Asegúrate de tener instalado el siguiente software:
-- **Node.js**: (Versión 18 o superior)
-- **npm**: (Generalmente se instala con Node.js)
-- **Git**: Para clonar el repositorio.
-- **Servidor de MySQL**: La base de datos del proyecto.
-- **Cliente de API REST**: Se recomienda [Bruno](https://www.usebruno.com/) o Postman para probar los endpoints.
-
-### 3.2. Pasos de Instalación
+### 4.2. Pasos de Instalación
 
 1.  **Clonar el Repositorio:**
     ```bash
     git clone https://github.com/DeniLescano/GrupoW-Proyecto-TUDW
-    cd GrupoW-Proyecto-TUDW
+    cd GrupoW-Proyecto-TUDW/progiii-api
     ```
 
-2.  **Instalar Dependencias de Node.js:**
-    Navega a la carpeta de la API e instala los paquetes de npm.
+2.  **Instalar Dependencias:**
     ```bash
-    cd progiii-api
     npm install
     ```
 
-3.  **Configurar la Base de Datos MySQL:**
-    - **Instala MySQL Server** en tu sistema (puedes seguir la guía para [Linux](https://dev.mysql.com/doc/mysql-apt-repo-quick-guide/en/) o usar [MySQL Installer para Windows](https://dev.mysql.com/downloads/installer/)).
-    - Durante la instalación, asegúrate de guardar la **contraseña del usuario `root`**.
-    - Una vez instalado, inicia sesión en MySQL como `root` (ej: `sudo mysql` en Linux o usando MySQL Workbench en Windows).
-    - Ejecuta los siguientes comandos SQL para crear la base de datos y el usuario que usará la API:
+3.  **Configurar Base de Datos:**
+    - Inicia sesión en MySQL como `root`.
+    - Crea la base de datos y el usuario dedicado:
     ```sql
     CREATE DATABASE reservas;
     CREATE USER 'progiii_user'@'localhost' IDENTIFIED BY 'prog123';
@@ -80,70 +73,37 @@ Asegúrate de tener instalado el siguiente software:
     FLUSH PRIVILEGES;
     EXIT;
     ```
-    > **Nota:** La contraseña `'prog123'` coincide con la que está configurada en el archivo `.env` del proyecto. Si decides usar una contraseña diferente, recuerda actualizarla en el archivo `.env`.
 
-### 3.3. Cargar Datos Iniciales
+4.  **Configurar Variables de Entorno:**
+    - Renombra el archivo `.env.example` a `.env`.
+    > Las credenciales por defecto en `.env.example` coinciden con las del paso anterior, por lo que no se necesitan cambios.
 
-Para que la aplicación funcione con datos de prueba, necesitas crear la estructura de las tablas y luego poblarlas.
-
-1.  **Crear la Estructura (Tablas):**
-    El archivo `database/migrations/001_initial_schema.sql` contiene la estructura de todas las tablas. Ejecuta el siguiente comando desde el directorio `progiii-api`:
+5.  **Ejecutar Migraciones y Seeds:**
+    Ejecuta los siguientes scripts **en orden**. Se utilizará la contraseña `prog123`.
     ```bash
-    mysql -u progiii_user -p reservas < database/migrations/001_initial_schema.sql
-    ```
-    *(Te pedirá la contraseña que configuraste: `prog123`)*.
+    # 1. Estructura de tablas
+    mysql -u progiii_user -p'prog123' reservas < database/migrations/001_initial_schema.sql
 
-2.  **Cargar los Datos (Semillas):**
-    El siguiente comando limpia las tablas (para evitar duplicados) y luego inserta los datos de prueba desde `database/seeds/initial_data.sql`.
+    # 2. Stored Procedures
+    mysql -u progiii_user -p'prog123' reservas < database/migrations/002_stored_procedures.sql
+
+    # 3. Tabla de Notificaciones
+    mysql -u progiii_user -p'prog123' reservas < src/database/create_notifications_table.sql
+
+    # 4. Tabla de Comentarios
+    mysql -u progiii_user -p'prog123' reservas < scripts/create_comentarios_table.sql
+
+    # 5. (Opcional) Cargar datos de prueba
+    mysql -u progiii_user -p'prog123' reservas < database/seeds/initial_data.sql
+    mysql -u progiii_user -p'prog123' reservas < database/seeds/usuarios_prueba.sql
+    ```
+
+6.  **Iniciar el Servidor:**
     ```bash
-    mysql -u progiii_user -p reservas < database/seeds/initial_data.sql
+    npm run dev
     ```
+    🎉 ¡El servidor estará corriendo en `http://localhost:3007`!
 
-### 3.4. Iniciar el Servidor
+## 📚 Documentación Detallada
 
-Una vez completados los pasos anteriores, puedes iniciar el servidor en modo de desarrollo:
-```bash
-npm run dev
-```
-El servidor estará corriendo en `http://localhost:3000`.
-
-## 4. Funcionalidad Implementada
-
-Actualmente, la API cuenta con un BREAD (Browse, Read, Edit, Add, Delete) completo para la entidad **Salones**.
-
-### Endpoints de Salones (`/api/salones`)
-
--   **`GET /` (Browse):** Lista todos los salones activos.
--   **`GET /:id` (Read):** Muestra un salón específico por su ID.
--   **`POST /` (Add):** Crea un nuevo salón. Requiere un cuerpo JSON con `titulo`, `direccion`, `capacidad` e `importe`.
--   **`PUT /:id` (Edit):** Actualiza un salón existente. Requiere un cuerpo JSON con los campos a modificar.
--   **`DELETE /:id` (Delete):** Realiza un borrado lógico del salón (cambia el campo `activo` a `0`).
-
-**Ejemplo de cuerpo JSON para `POST` y `PUT`:**
-```json
-{
-    "titulo": "Nombre del Salón",
-    "direccion": "Dirección del Salón",
-    "capacidad": 100,
-    "importe": 150000.00
-}
-```
-
-## 5. Próximos Pasos y Mejoras
-
-Para completar los requisitos del Trabajo Final, se deben abordar las siguientes funcionalidades:
-
-**Prioridad Alta - Funcionalidad Central Faltante:**
-
-1.  **Autenticación con JWT:** Implementar un endpoint `/api/auth/login` que genere un token para proteger las rutas.
-2.  **Autorización por Roles:** Restringir el acceso a ciertos endpoints según el rol del usuario (Cliente, Empleado, Administrador).
-3.  **Completar BREAD para todas las Entidades:** Crear la lógica de rutas y controladores para `usuarios`, `turnos`, `servicios` y `reservas`.
-
-**Prioridad Media - Requisitos Técnicos Adicionales:**
-
-4.  **Documentación con Swagger:** Integrar `swagger-ui-express` y `swagger-jsdoc` para generar documentación interactiva.
-5.  **Validaciones con `express-validator`:** Reemplazar las validaciones manuales por middlewares de validación.
-
-**Prioridad Baja - Funcionalidades Adicionales:**
-
-6.  **Generación de Informes y Estadísticas:** Crear endpoints que ejecuten `stored procedures` para devolver datos procesados.
+Para una guía completa sobre cada endpoint, la lógica de negocio, y todas las funcionalidades en detalle, por favor consulta el archivo **[GUIA_DE_LA_APLICACION.md](GUIA_DE_LA_APLICACION.md)**.
