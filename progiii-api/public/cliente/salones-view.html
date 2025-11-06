@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Salones - Cliente</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isCliente()) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1>Salones Disponibles</h1>
+    </nav>
+
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input" 
+                placeholder="Buscar por título o dirección..." 
+                onkeyup="filterSalones()"
+            >
+        </div>
+    </header>
+
+    <div id="salones-cards-container" class="cards-grid"></div>
+    
+    <p id="no-results" style="display: none; text-align: center; color: gray;">
+        No se encontraron salones que coincidan con la búsqueda.
+    </p>
+
+    <script>
+        const cardsContainer = document.getElementById('salones-cards-container');
+        const filterInput = document.getElementById('filter-input');
+        const noResults = document.getElementById('no-results');
+        let allSalones = [];
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS'
+            }).format(amount);
+        }
+
+        async function fetchSalones() {
+            try {
+                const response = await fetch('http://localhost:3007/api/v1/salones');
+                if (!response.ok) throw new Error('Error al cargar salones');
+                const data = await response.json();
+                // Manejar respuesta estandarizada { success: true, data: [...] }
+                allSalones = (data.success && data.data) ? data.data : data;
+                
+                if (!Array.isArray(allSalones)) {
+                    allSalones = [];
+                }
+                
+                renderSalones(allSalones);
+            } catch (error) {
+                console.error('Error:', error);
+                cardsContainer.innerHTML = `<p style="color: red; text-align: center;">Error al cargar los salones: ${error.message}</p>`;
+            }
+        }
+
+        function renderSalones(salonesToRender) {
+            cardsContainer.innerHTML = '';
+            
+            if (salonesToRender.length === 0) {
+                noResults.style.display = 'block';
+                return;
+            }
+            
+            noResults.style.display = 'none';
+
+            salonesToRender.forEach(salon => {
+                const card = document.createElement('div');
+                card.className = 'salon-card';
+                card.innerHTML = `
+                    <h3 class="card-title">${salon.titulo}</h3>
+                    <p class="card-info"><strong>Dirección:</strong> ${salon.direccion}</p>
+                    <p class="card-info"><strong>Capacidad:</strong> ${salon.capacidad} personas</p>
+                    <p class="card-info"><strong>Importe:</strong> ${formatCurrency(salon.importe)}</p>
+                `;
+                cardsContainer.appendChild(card);
+            });
+        }
+
+        window.filterSalones = function() {
+            const filterText = filterInput.value.toLowerCase();
+            const filtered = allSalones.filter(s => 
+                s.titulo.toLowerCase().includes(filterText) || 
+                s.direccion.toLowerCase().includes(filterText)
+            );
+            renderSalones(filtered);
+        };
+
+        fetchSalones();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Reservas - Inicio</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        // Verificar autenticación y rol de administrador
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1><img src="../img/administrador.png" alt="Administrador" style="width: 40px; height: 40px; vertical-align: middle; margin-right: 10px;"> Panel de Administración</h1>
+    </nav>
+    
+    <div class="cards-grid">
+        <!-- Card de Salones -->
+        <a href="../salones.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/salones.png" alt="Salones"></div>
+                <h2 class="nav-card-title">Gestión de Salones</h2>
+                <p class="nav-card-description">Administra los salones de eventos: crear, editar, eliminar y visualizar.</p>
+            </div>
+        </a>
+
+        <!-- Card de Servicios -->
+        <a href="../empleado/servicios.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/servicios.png" alt="Servicios"></div>
+                <h2 class="nav-card-title">Gestión de Servicios</h2>
+                <p class="nav-card-description">Administrar servicios adicionales: crear, editar, eliminar y visualizar.</p>
+            </div>
+        </a>
+
+        <!-- Card de Turnos -->
+        <a href="../empleado/turnos.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/turnos.png" alt="Turnos"></div>
+                <h2 class="nav-card-title">Gestión de Turnos</h2>
+                <p class="nav-card-description">Administrar horarios de turnos: crear, editar, eliminar y visualizar.</p>
+            </div>
+        </a>
+
+        
+
+        <!-- Card de Reservas -->
+        <a href="../administrador/reservas.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/reservas.png" alt="Reservas"></div>
+                <h2 class="nav-card-title">Gestión de Reservas</h2>
+                <p class="nav-card-description">Administrar todas las reservas: crear, editar, eliminar y visualizar.</p>
+            </div>
+        </a>
+
+
+        <!-- Card de Usuarios -->
+        <a href="../usuarios.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/usuarios.png" alt="Usuarios"></div>
+                <h2 class="nav-card-title">Gestión de Usuarios</h2>
+                <p class="nav-card-description">Gestiona los usuarios del sistema: crear, editar, activar y desactivar.</p>
+            </div>
+        </a>
+        
+
+        
+        <!-- Card de Informes de Salones -->
+        <a href="../informes-salones.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/salones.png" alt="Informes"></div>
+                <h2 class="nav-card-title">Informes de Salones</h2>
+                <p class="nav-card-description">Visualiza estadísticas y reportes de los salones disponibles.</p>
+            </div>
+        </a>
+
+        <!-- Card de Informes de Usuarios -->
+        <a href="../informes-usuarios.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/usuarios.png" alt="Informes"></div>
+                <h2 class="nav-card-title">Informes de Usuarios</h2>
+                <p class="nav-card-description">Consulta estadísticas y métricas de los usuarios registrados.</p>
+            </div>
+        </a>
+
+        
+
+
+
+        <!-- Card de Informes de Reservas -->
+        <a href="reportes-reservas.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/reservas.png" alt="Informes"></div>
+                <h2 class="nav-card-title">Informes de Reservas</h2>
+                <p class="nav-card-description">Generar reportes detallados de reservas en PDF y CSV.</p>
+            </div>
+        </a>
+    </div>
+
+</body>
+</html>

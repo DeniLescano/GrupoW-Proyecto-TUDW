@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Turnos - Cliente</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isCliente()) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1>Turnos Disponibles</h1>
+    </nav>
+
+    <div class="table-container">
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>Orden</th>
+                    <th>Horario</th>
+                </tr>
+            </thead>
+            <tbody id="turnos-body">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const turnosBody = document.getElementById('turnos-body');
+
+        function formatTime(timeString) {
+            if (!timeString) return '-';
+            return timeString.substring(0, 5);
+        }
+
+        async function fetchTurnos() {
+            try {
+                const response = await fetch('http://localhost:3007/api/v1/turnos');
+                if (!response.ok) throw new Error('Error al cargar turnos');
+                const data = await response.json();
+                // Manejar respuesta estandarizada { success: true, data: [...] }
+                const turnos = (data.success && data.data) ? data.data : data;
+                
+                if (!Array.isArray(turnos)) {
+                    turnos = [];
+                }
+                
+                renderTurnos(turnos);
+            } catch (error) {
+                console.error('Error:', error);
+                turnosBody.innerHTML = `<tr><td colspan="2" style="color: red; text-align: center;">Error: ${error.message}</td></tr>`;
+            }
+        }
+
+        function renderTurnos(turnos) {
+            turnosBody.innerHTML = '';
+            
+            if (!turnos || turnos.length === 0) {
+                turnosBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: gray;">No hay turnos disponibles</td></tr>';
+                return;
+            }
+            
+            turnos.forEach(turno => {
+                const row = turnosBody.insertRow();
+                row.insertCell().textContent = turno.orden;
+                row.insertCell().textContent = `${formatTime(turno.hora_desde)} - ${formatTime(turno.hora_hasta)}`;
+            });
+        }
+
+        fetchTurnos();
+    </script>
+</body>
+</html>
+

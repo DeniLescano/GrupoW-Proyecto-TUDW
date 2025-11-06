@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios</title>
+    <link rel="stylesheet" href="styless/main.css">
+</head>
+<body>
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/icons.js"></script>
+    <script>
+        // Verificar autenticación - solo administradores pueden acceder
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <script src="scripts/sidebar.js" defer></script>
+    <nav class="main-nav">
+        <h1>Gestión de Usuarios</h1>
+    </nav>
+    
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input-user" 
+                placeholder="Buscar por nombre o usuario..." 
+                onkeyup="filterUsuarios()"
+            >
+            <button id="open-add-user-modal-btn" class="add-btn">Crear Nuevo Usuario</button>
+        </div>
+    </header>
+
+    <div class="table-container">
+        <h2>Usuarios Activos</h2>
+        <table id="usuarios-table-activos" class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre y Apellido</th>
+                    <th>Usuario</th>
+                    <th>Tipo</th>
+                    <th>Celular</th>
+                    <th>Activo</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="usuarios-activos-body">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-container" style="margin-top: 40px;">
+        <h2 style="color: var(--danger-color, #dc3545);">Usuarios Desactivados</h2>
+        <table id="usuarios-table-inactivos" class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre y Apellido</th>
+                    <th>Usuario</th>
+                    <th>Tipo</th>
+                    <th>Celular</th>
+                    <th>Activo</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="usuarios-inactivos-body">
+            </tbody>
+        </table>
+    </div>
+
+    
+    <p id="no-results-user" style="display: none; text-align: center; color: gray;">
+        No se encontraron usuarios que coincidan con la búsqueda.
+    </p>
+
+
+    <div id="add-user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-add-user-modal">&times;</span>
+            <h2>Crear Nuevo Usuario</h2>
+            <form id="add-user-form">
+                <div class="form-group">
+                    <label for="add-nombre"><strong>Nombre:</strong></label>
+                    <input type="text" id="add-nombre" placeholder="Ingrese el nombre" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-apellido"><strong>Apellido:</strong></label>
+                    <input type="text" id="add-apellido" placeholder="Ingrese el apellido" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-nombre-usuario"><strong>Nombre de Usuario (Email):</strong></label>
+                    <input type="text" id="add-nombre-usuario" placeholder="correo@ejemplo.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-contrasenia"><strong>Contraseña:</strong></label>
+                    <input type="password" id="add-contrasenia" placeholder="Ingrese la contraseña" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-tipo-usuario"><strong>Tipo de Usuario:</strong></label>
+                    <select id="add-tipo-usuario" required>
+                        <option value="">Seleccione un tipo</option>
+                        <option value="1">Cliente</option>
+                        <option value="2">Empleado</option>
+                        <option value="3">Administrador</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-celular"><strong>Celular:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="add-celular" placeholder="Ej: +54 9 11 1234-5678">
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-foto"><strong>URL de Foto:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="add-foto" placeholder="https://ejemplo.com/foto.jpg">
+                </div>
+                
+                <div class="action-buttons-edit" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button type="submit" class="add-btn" style="width: 100%;">Guardar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div id="details-user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-details-user-modal">&times;</span>
+            <h2>Detalles del Usuario</h2>
+            
+            <div id="user-details-view">
+                <p><strong>ID:</strong> <span id="view-id"></span></p>
+                <p><strong>Nombre:</strong> <span id="view-nombre"></span></p>
+                <p><strong>Apellido:</strong> <span id="view-apellido"></span></p>
+                <p><strong>Usuario:</strong> <span id="view-nombre-usuario"></span></p>
+                <p><strong>Tipo de Usuario:</strong> <span id="view-tipo-usuario"></span></p>
+                <p><strong>Celular:</strong> <span id="view-celular"></span></p>
+                <p><strong>Estado:</strong> <span id="view-activo"></span></p>
+                <p><strong>Creado:</strong> <span id="view-creado"></span></p>
+                
+                <div class="action-buttons-view">
+                    <button id="open-edit-user-form-btn" class="edit-btn">Modificar Usuario</button>
+                    <button id="change-role-btn" class="edit-btn" style="background: #667eea; margin-top: 10px;">Cambiar Rol</button>
+                    <button id="delete-user-btn" class="delete-btn">Desactivar Usuario</button>
+                    <button id="permanent-delete-user-btn" class="danger-btn" style="display: none; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">⚠️ Eliminar Definitivamente</button>
+                </div>
+                <div id="self-deactivate-warning" style="display: none; margin-top: 15px; padding: 10px; background-color: #fff3cd; border-left: 4px solid #ffc107; color: #856404;">
+                    <strong>⚠️ Advertencia:</strong> No puedes desactivar tu propio usuario. Si necesitas hacerlo, contacta a otro administrador.
+                </div>
+            </div>
+
+            <form id="edit-user-form" style="display: none;">
+                <h3>Editar Datos del Usuario</h3>
+                
+                <div class="form-group">
+                    <label for="edit-nombre"><strong>Nombre:</strong></label>
+                    <input type="text" id="edit-nombre" placeholder="Ingrese el nombre" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-apellido"><strong>Apellido:</strong></label>
+                    <input type="text" id="edit-apellido" placeholder="Ingrese el apellido" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-nombre-usuario"><strong>Nombre de Usuario (Email):</strong></label>
+                    <input type="text" id="edit-nombre-usuario" placeholder="correo@ejemplo.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-tipo-usuario"><strong>Tipo de Usuario:</strong></label>
+                    <select id="edit-tipo-usuario" required>
+                        <option value="1">Cliente</option>
+                        <option value="2">Empleado</option>
+                        <option value="3">Administrador</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-celular"><strong>Celular:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="edit-celular" placeholder="Ej: +54 9 11 1234-5678">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-foto"><strong>URL de Foto:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="edit-foto" placeholder="https://ejemplo.com/foto.jpg">
+                </div>
+                
+                <input type="hidden" id="edit-user-id">
+                
+                <div class="action-buttons-edit">
+                    <button type="submit" class="edit-btn">Guardar Cambios</button>
+                    <button type="button" id="cancel-edit-user-btn" class="cancel-btn">Cancelar</button>
+                </div>
+            </form>
+            
+            <!-- Modal para cambiar rol -->
+            <div id="change-role-modal" class="modal" style="display: none;">
+                <div class="modal-content" style="max-width: 400px;">
+                    <span class="close-button close-change-role-modal">&times;</span>
+                    <h2>Cambiar Rol de Usuario</h2>
+                    <p><strong>Usuario:</strong> <span id="change-role-user-name"></span></p>
+                    <p><strong>Rol Actual:</strong> <span id="change-role-current"></span></p>
+                    <form id="change-role-form">
+                        <div class="form-group">
+                            <label for="change-role-select"><strong>Nuevo Rol:</strong></label>
+                            <select id="change-role-select" required>
+                                <option value="1">Cliente</option>
+                                <option value="2">Empleado</option>
+                                <option value="3">Administrador</option>
+                            </select>
+                        </div>
+                        <input type="hidden" id="change-role-user-id">
+                        <div class="action-buttons-edit" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                            <button type="submit" class="add-btn" style="width: 100%;">Cambiar Rol</button>
+                            <button type="button" class="cancel-btn close-change-role-modal" style="width: 100%; margin-top: 10px;">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <style>
+                .form-group {
+                    margin-bottom: 20px;
+                }
+                .form-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: #333;
+                    font-size: 14px;
+                }
+                .form-group input,
+                .form-group select {
+                    width: 100%;
+                    padding: 12px 15px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    font-size: 1rem;
+                    transition: border-color 0.3s;
+                    box-sizing: border-box;
+                }
+                .form-group input:focus,
+                .form-group select:focus {
+                    outline: none;
+                    border-color: var(--primary-color, #007bff);
+                }
+                .form-group select {
+                    background-color: white;
+                    cursor: pointer;
+                }
+                /* Asegurar que los botones estén visibles */
+                .action-buttons-edit {
+                    position: sticky;
+                    bottom: 0;
+                    background: white;
+                    padding-top: 15px;
+                    margin-top: 20px;
+                    border-top: 1px solid #e0e0e0;
+                }
+            </style>
+
+        </div>
+    </div>
+
+    <script src="scripts/usuarios.js" defer></script>
+</body>
+</html>
