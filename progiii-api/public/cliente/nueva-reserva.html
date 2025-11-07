@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Reserva - Cliente</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        // Verificar autenticación y rol de cliente
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = '../login.html';
+        }
+    </script>   
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1>Nueva Reserva</h1>
+    </nav>
+
+    <!-- Modal -->
+    <div id="reserva-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-button" onclick="window.location.href='index.html'" style="cursor: pointer;">&times;</span>
+            <h2 style="margin-bottom: 20px;">Crear Nueva Reserva</h2>
+            
+            <form id="reserva-form">
+            
+            <label for="fecha_reserva">Fecha de la Reserva *</label>
+            <input type="date" id="fecha_reserva" required min="">
+            
+            <label for="salon_id">Salón *</label>
+            <select id="salon_id" required>
+                <option value="">Seleccione un salón</option>
+            </select>
+            
+            <label for="turno_id">Turno *</label>
+            <select id="turno_id" required>
+                <option value="">Seleccione un turno</option>
+            </select>
+            
+            <label for="tematica">Temática (opcional)</label>
+            <input type="text" id="tematica" placeholder="Ej: Cumpleaños temático, Fiesta infantil...">
+            
+            <label for="foto_cumpleaniero">URL de Foto del Cumpleañero (opcional)</label>
+            <input type="url" id="foto_cumpleaniero" placeholder="https://...">
+            
+            <label>Servicios Adicionales (opcional)</label>
+            <div id="servicios-container" style="margin-bottom: 15px;"></div>
+            
+            <div id="importe-info" style="background: #f0f0f0; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                <p><strong>Importe del Salón:</strong> <span id="importe-salon">$0.00</span></p>
+                <p><strong>Importe de Servicios:</strong> <span id="importe-servicios">$0.00</span></p>
+                <p><strong style="font-size: 1.2rem;">Total:</strong> <span id="importe-total" style="font-size: 1.2rem;">$0.00</span></p>
+            </div>
+            
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="add-btn" style="flex: 1;">Crear Reserva</button>
+                    <button type="button" class="cancel-btn" onclick="window.location.href='index.html'" style="flex: 1;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar modal con animaciones
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('reserva-modal');
+            
+            // Agregar clase show para animación
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        });
+    </script>
+    <script src="../scripts/cliente-nueva-reserva.js" defer></script>
+</body>
+</html>
+

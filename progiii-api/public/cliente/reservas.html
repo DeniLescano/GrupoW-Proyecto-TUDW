@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Reservas - Cliente</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+
+       <script>
+        // Verificar autenticación y rol de cliente
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = '../login.html';
+        }
+    </script> 
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1>Mis Reservas</h1>
+    </nav>
+
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input" 
+                placeholder="Buscar por salón, temática..." 
+                onkeyup="filterReservas()"
+            >
+        </div>
+    </header>
+
+    <div class="table-container">
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Salón</th>
+                    <th>Turno</th>
+                    <th>Temática</th>
+                    <th>Importe Total</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                </tr>
+            </thead>
+            <tbody id="reservas-body">
+            </tbody>
+        </table>
+    </div>
+
+    <p id="no-results" style="display: none; text-align: center; color: gray;">
+        No se encontraron reservas.
+    </p>
+
+    <div id="details-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-button close-details-modal">&times;</span>
+            <h2>Detalles de la Reserva</h2>
+            
+            <div id="reserva-details-view">
+                <p><strong>ID:</strong> <span id="view-id"></span></p>
+                <p><strong>Fecha:</strong> <span id="view-fecha"></span></p>
+                <p><strong>Salón:</strong> <span id="view-salon"></span></p>
+                <p><strong>Dirección:</strong> <span id="view-direccion"></span></p>
+                <p><strong>Turno:</strong> <span id="view-turno"></span></p>
+                <p><strong>Temática:</strong> <span id="view-tematica"></span></p>
+                <p><strong>Importe Salón:</strong> <span id="view-importe-salon"></span></p>
+                <p><strong>Servicios:</strong></p>
+                <ul id="view-servicios" style="margin-left: 20px;"></ul>
+                <p><strong>Importe Total:</strong> <span id="view-importe-total"></span></p>
+                <p><strong>Estado:</strong> <span id="view-estado"></span></p>
+                <p><strong>Creado:</strong> <span id="view-creado"></span></p>
+                
+                <div id="cancel-reserva-section" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                    <button id="cancel-reserva-btn" class="delete-btn" style="width: 100%;">Cancelar Reserva</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para cancelar reserva con motivo -->
+    <div id="cancel-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close-button close-cancel-modal">&times;</span>
+            <h2>Cancelar Reserva</h2>
+            <p><strong>ID Reserva:</strong> <span id="cancel-reserva-id"></span></p>
+            <p style="color: #dc3545; margin-bottom: 15px;">⚠️ Esta acción no se puede deshacer. La reserva será cancelada permanentemente.</p>
+            
+            <form id="cancel-reserva-form">
+                <div class="form-group">
+                    <label for="cancel-motivo"><strong>Motivo de Cancelación:</strong> <span style="color: red;">*</span></label>
+                    <textarea id="cancel-motivo" rows="4" placeholder="Ingrese el motivo de la cancelación..." required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; resize: vertical; box-sizing: border-box;"></textarea>
+                </div>
+                <input type="hidden" id="cancel-reserva-id-hidden">
+                <div class="action-buttons-edit" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button type="submit" class="delete-btn" style="width: 100%;">Confirmar Cancelación</button>
+                    <button type="button" class="cancel-btn close-cancel-modal" style="width: 100%; margin-top: 10px;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../scripts/cliente-reservas.js" defer></script>
+</body>
+</html>
+

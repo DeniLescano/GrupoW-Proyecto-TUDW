@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empleado - Sistema de Reservas</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        // Verificar autenticación y rol de empleado
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1><img src="../img/empleados.png" alt="Empleado" style="width: 40px; height: 40px; vertical-align: middle; margin-right: 10px;"> Área de Empleado</h1>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <span id="usuario-nombre"></span>
+            <button onclick="window.auth.logout()" class="delete-btn" style="padding: 8px 15px;">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <div class="cards-grid" style="margin-top: 30px;">
+        <a href="reservas.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/reservas.png" alt="Reservas"></div>
+                <h2 class="nav-card-title">Listar Reservas</h2>
+                <p class="nav-card-description">Ver todas las reservas realizadas.</p>
+            </div>
+        </a>
+
+        <a href="clientes.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/cliente.png" alt="Clientes"></div>
+                <h2 class="nav-card-title">Listar Clientes</h2>
+                <p class="nav-card-description">Ver información de los clientes registrados.</p>
+            </div>
+        </a>
+
+        <a href="../salones.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/salones.png" alt="Salones"></div>
+                <h2 class="nav-card-title">Gestión de Salones</h2>
+                <p class="nav-card-description">Administrar salones (BREAD completo).</p>
+            </div>
+        </a>
+
+        <a href="servicios.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/servicios.png" alt="Servicios"></div>
+                <h2 class="nav-card-title">Gestión de Servicios</h2>
+                <p class="nav-card-description">Administrar servicios (BREAD completo).</p>
+            </div>
+        </a>
+
+        <a href="turnos.html" class="nav-card-link">
+            <div class="nav-card">
+                <div class="nav-card-icon"><img src="../img/turnos.png" alt="Turnos"></div>
+                <h2 class="nav-card-title">Gestión de Turnos</h2>
+                <p class="nav-card-description">Administrar turnos (BREAD completo).</p>
+            </div>
+        </a>
+    </div>
+
+    <style>
+        .nav-card-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .nav-card {
+            background-color: #ffffff;
+            border-radius: 15px;
+            padding: 40px 30px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 280px;
+            border-top: 5px solid var(--primary-color);
+        }
+
+        .nav-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+            border-top-color: var(--secondary-color);
+        }
+
+        .nav-card-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            line-height: 1;
+        }
+        
+        .nav-card-icon img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+
+        .nav-card-title {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .nav-card-description {
+            color: #6c757d;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-top: auto;
+        }
+    </style>
+
+    <script>
+        // Mostrar nombre del usuario
+        const usuario = window.auth.getUsuario();
+        if (usuario) {
+            document.getElementById('usuario-nombre').textContent = `Bienvenido, ${usuario.nombre} ${usuario.apellido}`;
+        }
+    </script>
+</body>
+</html>
+

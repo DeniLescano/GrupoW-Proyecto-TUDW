@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Servicios - Cliente</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        // Verificar autenticación y rol de cliente
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1>Servicios Disponibles</h1>
+    </nav>
+
+    <div class="table-container">
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Descripción</th>
+                    <th>Importe</th>
+                </tr>
+            </thead>
+            <tbody id="servicios-body">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const serviciosBody = document.getElementById('servicios-body');
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS'
+            }).format(amount);
+        }
+
+        async function fetchServicios() {
+            try {
+                const response = await fetch('http://localhost:3007/api/v1/servicios');
+                if (!response.ok) throw new Error('Error al cargar servicios');
+                const data = await response.json();
+                // Manejar respuesta estandarizada { success: true, data: [...] }
+                const servicios = (data.success && data.data) ? data.data : data;
+                
+                if (!Array.isArray(servicios)) {
+                    servicios = [];
+                }
+                
+                renderServicios(servicios);
+            } catch (error) {
+                console.error('Error:', error);
+                serviciosBody.innerHTML = `<tr><td colspan="3" style="color: red; text-align: center;">Error: ${error.message}</td></tr>`;
+            }
+        }
+
+        function renderServicios(servicios) {
+            serviciosBody.innerHTML = '';
+            
+            if (!servicios || servicios.length === 0) {
+                serviciosBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: gray;">No hay servicios disponibles</td></tr>';
+                return;
+            }
+            
+            servicios.forEach(servicio => {
+                const row = serviciosBody.insertRow();
+                row.insertCell().textContent = servicio.servicio_id;
+                row.insertCell().textContent = servicio.descripcion;
+                row.insertCell().textContent = formatCurrency(servicio.importe);
+            });
+        }
+
+        fetchServicios();
+    </script>
+</body>
+</html>
+

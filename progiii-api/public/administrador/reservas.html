@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Reservas - Administrador</title>
+    <link rel="stylesheet" href="../styless/main.css">
+</head>
+<body>
+    <script src="../scripts/auth.js"></script>
+    <script src="../scripts/icons.js"></script>
+    <script>
+        // Verificar autenticación y rol de administrador
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.isAdmin()) {
+            window.location.href = '../login.html';
+        }
+    </script>
+    
+    <script src="../scripts/sidebar.js" defer></script>
+    
+    <nav class="main-nav">
+        <h1><img src="../img/reservas.png" alt="Reservas" style="width: 40px; height: 40px; vertical-align: middle; margin-right: 10px;"> Gestión de Reservas</h1>
+    </nav>
+
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input" 
+                placeholder="Buscar por cliente, salón, temática..." 
+                onkeyup="filterReservas()"
+            >
+
+            <button id="open-add-modal-btn" class="add-btn">Crear Nueva Reserva</button>
+
+        </div>
+    </header>
+
+    <div class="table-container">
+        <h2>Reservas Activas</h2>
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Salón</th>
+                    <th>Turno</th>
+                    <th>Temática</th>
+                    <th>Importe Total</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="reservas-activas-body">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-container" style="margin-top: 40px;">
+        <h2 style="color: var(--danger-color, #dc3545);">Reservas Desactivadas</h2>
+        <table class="usuarios-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Salón</th>
+                    <th>Turno</th>
+                    <th>Temática</th>
+                    <th>Importe Total</th>
+                    <th>Estado</th>
+                    <th>Creado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="reservas-inactivas-body">
+            </tbody>
+        </table>
+    </div>
+
+    <p id="no-results" style="display: none; text-align: center; color: gray;">
+        No se encontraron reservas.
+    </p>
+
+    <!-- Modal para crear/editar -->
+    <div id="add-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <span class="close-button close-add-modal">&times;</span>
+            <h2 id="modal-title">Crear Nueva Reserva</h2>
+            <form id="reserva-form">
+                <input type="hidden" id="edit-reserva-id">
+                
+                <div class="form-group">
+                    <label for="form-fecha-reserva"><strong>Fecha de Reserva:</strong></label>
+                    <input type="date" id="form-fecha-reserva" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="form-salon-id"><strong>Salón:</strong></label>
+                    <select id="form-salon-id" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="form-turno-id"><strong>Turno:</strong></label>
+                    <select id="form-turno-id" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="form-usuario-id"><strong>Cliente:</strong></label>
+                    <select id="form-usuario-id" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="form-tematica"><strong>Temática:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="form-tematica" placeholder="Ej: Superhéroes">
+                </div>
+                
+                <div class="form-group">
+                    <label for="form-foto-cumpleaniero"><strong>URL Foto Cumpleañero:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <input type="text" id="form-foto-cumpleaniero" placeholder="https://ejemplo.com/foto.jpg">
+                </div>
+                
+                <div class="form-group">
+                    <label><strong>Servicios:</strong> <span style="color: #666; font-weight: normal;">(Opcional)</span></label>
+                    <div id="servicios-checkboxes"></div>
+                </div>
+                
+                <div class="action-buttons-edit">
+                    <button type="submit" class="add-btn">Guardar</button>
+                    <button type="button" class="cancel-btn close-add-modal">Cancelar</button>
+                </div>
+            </form>
+            
+            <style>
+                .form-group {
+                    margin-bottom: 20px;
+                }
+                .form-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: #333;
+                    font-size: 14px;
+                }
+                .form-group input,
+                .form-group select {
+                    width: 100%;
+                    padding: 12px 15px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    font-size: 1rem;
+                    transition: border-color 0.3s;
+                    box-sizing: border-box;
+                }
+                .form-group input:focus,
+                .form-group select:focus {
+                    outline: none;
+                    border-color: var(--primary-color, #007bff);
+                }
+                .form-group select {
+                    background-color: white;
+                    cursor: pointer;
+                }
+                #servicios-checkboxes {
+                    max-height: 200px;
+                    overflow-y: auto;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    padding: 10px;
+                }
+                .servicio-checkbox {
+                    display: flex;
+                    align-items: center;
+                    padding: 8px;
+                    margin-bottom: 5px;
+                }
+                .servicio-checkbox input {
+                    width: auto;
+                    margin-right: 10px;
+                }
+            </style>
+        </div>
+    </div>
+
+    <!-- Modal detalles -->
+    <div id="details-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="close-button close-details-modal">&times;</span>
+            <h2>Detalles de la Reserva</h2>
+            
+            <div id="reserva-details-view">
+                <p><strong>ID:</strong> <span id="view-id"></span></p>
+                <p><strong>Fecha:</strong> <span id="view-fecha"></span></p>
+                <p><strong>Cliente:</strong> <span id="view-cliente"></span></p>
+                <p><strong>Usuario:</strong> <span id="view-usuario"></span></p>
+                <p><strong>Salón:</strong> <span id="view-salon"></span></p>
+                <p><strong>Dirección:</strong> <span id="view-direccion"></span></p>
+                <p><strong>Turno:</strong> <span id="view-turno"></span></p>
+                <p><strong>Temática:</strong> <span id="view-tematica"></span></p>
+                <p><strong>Importe Salón:</strong> <span id="view-importe-salon"></span></p>
+                <p><strong>Servicios:</strong></p>
+                <ul id="view-servicios" style="margin-left: 20px;"></ul>
+                <p><strong>Importe Total:</strong> <span id="view-importe-total"></span></p>
+                <p><strong>Estado:</strong> <span id="view-estado"></span></p>
+                <p><strong>Creado:</strong> <span id="view-creado"></span></p>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 2px solid #e0e0e0;">
+                
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: var(--primary-color);">Comentarios / Observaciones</h3>
+                <div id="comentarios-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <div id="comentarios-list"></div>
+                    <p id="no-comentarios" style="text-align: center; color: #999; font-style: italic; display: none;">No hay comentarios aún</p>
+                </div>
+                
+                <div id="agregar-comentario-section" style="margin-top: 15px;">
+                    <textarea 
+                        id="nuevo-comentario" 
+                        placeholder="Agregar comentario u observación (ej: Pago 50% de la reserva)..."
+                        rows="3"
+                        style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.9rem; resize: vertical; box-sizing: border-box;"
+                    ></textarea>
+                    <button id="agregar-comentario-btn" class="add-btn" style="margin-top: 10px; width: 100%;">Agregar Comentario</button>
+                </div>
+                
+                <div class="action-buttons-view">
+                    <button id="open-edit-btn" class="edit-btn">Modificar Reserva</button>
+                    <button id="delete-reserva-btn" class="delete-btn">Desactivar Reserva</button>
+                    <button id="permanent-delete-reserva-btn" class="danger-btn" style="display: none; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">⚠️ Eliminar Definitivamente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../scripts/administrador-reservas.js" defer></script>
+</body>
+</html>
+

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Salones</title>
+    <link rel="stylesheet" href="styless/main.css">
+</head>
+<body>
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/icons.js"></script>
+    <script>
+        // Verificar autenticación - empleados y administradores pueden acceder
+        if (!window.auth || !window.auth.isAuthenticated() || !window.auth.hasRole('empleado', 'administrador')) {
+            window.location.href = 'login.html';
+        }
+     </script>  
+    <script src="scripts/sidebar.js" defer></script>
+    <nav class="main-nav">
+        <h1>Gestión de Salones de Eventos</h1>
+    </nav>
+    <header>
+        <div class="controls-container">
+            <input 
+                type="text" 
+                id="filter-input" 
+                placeholder="Buscar por título o dirección..." 
+                onkeyup="filterSalones()"
+            >
+            
+            <button id="open-add-modal-btn" class="add-btn">Crear Nuevo Salón</button>
+        </div>
+    </header>
+
+    <div class="table-container">
+        <h2>Salones Activos</h2>
+        <div id="salones-activos-container" class="cards-grid">
+        </div>
+    </div>
+    
+    <div class="table-container" style="margin-top: 40px;">
+        <h2 style="color: var(--danger-color, #dc3545);">Salones Desactivados</h2>
+        <div id="salones-inactivos-container" class="cards-grid">
+        </div>
+    </div>
+    
+    <p id="no-results" style="display: none; text-align: center; color: gray;">
+        No se encontraron salones que coincidan con la búsqueda.
+    </p>
+
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-add-modal">&times;</span>
+            <h2>Crear Nuevo Salón</h2>
+            
+            <form id="add-salon-form">
+                <div class="form-group">
+                    <label for="add-titulo"><strong>Título:</strong></label>
+                    <input type="text" id="add-titulo" placeholder="Ingrese el título del salón" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-direccion"><strong>Dirección:</strong></label>
+                    <input type="text" id="add-direccion" placeholder="Ingrese la dirección completa" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-capacidad"><strong>Capacidad:</strong></label>
+                    <input type="number" id="add-capacidad" placeholder="Número de personas" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="add-importe"><strong>Importe ($):</strong></label>
+                    <input type="number" id="add-importe" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                
+                <div class="action-buttons-edit" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                    <button type="submit" class="add-btn" style="width: 100%;">Guardar Salón</button>
+                </div>
+            </form>
+            
+            <style>
+                .form-group {
+                    margin-bottom: 20px;
+                }
+                .form-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: #333;
+                    font-size: 14px;
+                }
+                .form-group input {
+                    width: 100%;
+                    padding: 12px 15px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    font-size: 1rem;
+                    transition: border-color 0.3s;
+                    box-sizing: border-box;
+                }
+                .form-group input:focus {
+                    outline: none;
+                    border-color: var(--primary-color, #007bff);
+                }
+            </style>
+        </div>
+    </div>
+
+    <div id="details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button close-details-modal">&times;</span>
+            <h2>Detalles del Salón</h2>
+            
+            <div id="salon-details-view">
+                <p><strong>Título:</strong> <span id="view-titulo"></span></p>
+                <p><strong>Dirección:</strong> <span id="view-direccion"></span></p>
+                <p><strong>Capacidad:</strong> <span id="view-capacidad"></span></p>
+                <p><strong>Importe:</strong> <span id="view-importe"></span></p>
+                
+                <div class="action-buttons-view">
+                    <button id="open-edit-form-btn" class="edit-btn">Editar</button>
+                    <button id="delete-salon-btn" class="delete-btn">Desactivar</button>
+                    <button id="permanent-delete-salon-btn" class="danger-btn" style="display: none; background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">⚠️ Eliminar Definitivamente</button>
+                </div>
+            </div>
+
+            <form id="edit-salon-form" style="display: none;">
+                <h3>Editar Datos del Salón</h3>
+                
+                <div class="form-group">
+                    <label for="edit-titulo"><strong>Título:</strong></label>
+                    <input type="text" id="edit-titulo" placeholder="Ingrese el título del salón" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-direccion"><strong>Dirección:</strong></label>
+                    <input type="text" id="edit-direccion" placeholder="Ingrese la dirección completa" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-capacidad"><strong>Capacidad:</strong></label>
+                    <input type="number" id="edit-capacidad" placeholder="Número de personas" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-importe"><strong>Importe ($):</strong></label>
+                    <input type="number" id="edit-importe" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                
+                <input type="hidden" id="edit-id">
+                
+                <div class="action-buttons-edit">
+                    <button type="submit" class="edit-btn">Guardar Cambios</button>
+                    <button type="button" id="cancel-edit-btn" class="cancel-btn">Cancelar</button>
+                </div>
+            </form>
+            
+            <style>
+                .form-group {
+                    margin-bottom: 20px;
+                }
+                .form-group label {
+                    display: block;
+                    margin-bottom: 8px;
+                    color: #333;
+                    font-size: 14px;
+                }
+                .form-group input {
+                    width: 100%;
+                    padding: 12px 15px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    font-size: 1rem;
+                    transition: border-color 0.3s;
+                    box-sizing: border-box;
+                }
+                .form-group input:focus {
+                    outline: none;
+                    border-color: var(--primary-color, #007bff);
+                }
+                .action-buttons-edit {
+                    position: sticky;
+                    bottom: 0;
+                    background: white;
+                    padding-top: 15px;
+                    margin-top: 20px;
+                    border-top: 1px solid #e0e0e0;
+                }
+            </style>
+
+        </div>
+    </div>
+
+
+    <script src="scripts/salones.js" defer></script>
+</body>
+</html>
+
