@@ -75,8 +75,8 @@ Asegúrate de tener instalado el siguiente software:
     - Ejecuta los siguientes comandos SQL para crear la base de datos y el usuario que usará la API:
     ```sql
     CREATE DATABASE reservas;
-    CREATE USER 'progiii_user'@'localhost' IDENTIFIED BY 'prog123';
-    GRANT ALL PRIVILEGES ON reservas.* TO 'progiii_user'@'localhost';
+    CREATE USER 'progiii_teacher'@'localhost' IDENTIFIED BY 'prog123';
+    GRANT ALL PRIVILEGES ON reservas.* TO 'progiii_teacher'@'localhost';
     FLUSH PRIVILEGES;
     EXIT;
     ```
@@ -89,14 +89,14 @@ Para que la aplicación funcione con datos de prueba, necesitas crear la estruct
 1.  **Crear la Estructura (Tablas):**
     El archivo `database/migrations/001_initial_schema.sql` contiene la estructura de todas las tablas. Ejecuta el siguiente comando desde el directorio `progiii-api`:
     ```bash
-    mysql -u progiii_user -p reservas < database/migrations/001_initial_schema.sql
+    mysql -u progiii_teacher -p reservas < database/migrations/001_initial_schema.sql
     ```
     *(Te pedirá la contraseña que configuraste: `prog123`)*.
 
 2.  **Cargar los Datos (Semillas):**
     El siguiente comando limpia las tablas (para evitar duplicados) y luego inserta los datos de prueba desde `database/seeds/initial_data.sql`.
     ```bash
-    mysql -u progiii_user -p reservas < database/seeds/initial_data.sql
+    mysql -u progiii_teacher -p reservas < database/seeds/initial_data.sql
     ```
 
 ### 3.4. Conexión a la Base de Datos para Profesores
